@@ -1,0 +1,19 @@
+# IGNORED DIRECTORIES
+
+/.idea/*
+/.vscode/*
+/vendor
+
+# IGNORED FILES
+.DS_Store
+*workspace
+*.prof
+*.bak
+# Test binary, built with go test -c
+*.test
+*.out
+coverage.*
+debug.*
+__debug_bin
+debug
+Makefile
