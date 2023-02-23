@@ -307,6 +307,41 @@ func Test_Set_error(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func Test_Set_wrongBucket(t *testing.T) {
+	path := "fastdb_set_bucket_error.db"
+
+	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	_ = os.Remove(filePath)
+
+	defer func() {
+		err := os.Remove(filePath)
+		assert.Nil(t, err)
+	}()
+
+	store, err := fastdb.Open(path, syncIime)
+	assert.Nil(t, err)
+	assert.NotNil(t, store)
+
+	// store a record
+	err = store.Set("under_score", 1, []byte("a text for key 1"))
+	assert.Nil(t, err)
+
+	err = store.Set("under_score", 2, []byte("a text for key 2"))
+	assert.Nil(t, err)
+
+	err = store.Close()
+	assert.Nil(t, err)
+
+	store2, err := fastdb.Open(path, syncIime)
+	assert.Nil(t, err)
+	assert.NotNil(t, store2)
+
+	defer func() {
+		err = store2.Close()
+		assert.Nil(t, err)
+	}()
+}
+
 func Benchmark_Get_File_1000(b *testing.B) {
 	path := "bench-get.db"
 	total := 1000

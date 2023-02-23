@@ -39,7 +39,7 @@ func Open(path string, syncIime int) (*DB, error) {
 		aof, keys, err = persist.OpenPersister(path, syncIime)
 	}
 
-	return &DB{aof: aof, keys: keys}, err
+	return &DB{aof: aof, keys: keys}, err //nolint:wrapcheck // it is already wrapped
 }
 
 /*

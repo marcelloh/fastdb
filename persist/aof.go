@@ -101,11 +101,13 @@ fileReader reads the file and fill the keys.
 */
 func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 	var (
-		count int
-		line  string
-		key   string
-		nrID  int
-		err   error
+		count  int
+		line   string
+		bucket string
+		key    string
+		nrID   int
+		isSet  bool
+		isGood bool
 	)
 
 	keys := make(map[string]map[int][]byte)
@@ -117,36 +119,35 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 
 		switch line {
 		case "set":
+			isSet = true
+
 			scanner.Scan()
 			key = scanner.Text()
-			count++
-
-			pieces := strings.Split(key, "_")
-			if len(pieces) != 2 {
-				return nil, fmt.Errorf("file (%s) has wrong key format on line: %d", aof.file.Name(), count)
-			}
-
-			nrID, err = strconv.Atoi(pieces[1])
-			if err != nil {
-				return nil, fmt.Errorf("file (%s) has wrong key format on line: %d %w", aof.file.Name(), count, err)
-			}
-
-			_, found := keys[pieces[0]]
-			if !found {
-				keys[pieces[0]] = map[int][]byte{}
-			}
 
 			scanner.Scan()
 			line = scanner.Text()
+
 			count++
-			keys[pieces[0]][nrID] = []byte(line)
+
+			bucket, nrID, isGood = setBucketAndKey(key, line, keys)
+			if !isGood {
+				return nil, fmt.Errorf("file (%s) has wrong key format on line: %d", aof.file.Name(), count)
+			}
+			count++
 		case "del":
+			isSet = false
+
 			scanner.Scan()
 			key = scanner.Text()
 			count++
+
 			delete(keys, key)
 		default:
-			return nil, fmt.Errorf("file (%s) has wrong instruction format on line: %d", aof.file.Name(), count)
+			if !isSet {
+				return nil, fmt.Errorf("file (%s) has wrong instruction format on line: %d", aof.file.Name(), count)
+			}
+
+			keys[bucket][nrID] = append(keys[bucket][nrID], []byte("\n"+line)...)
 		}
 	}
 
@@ -306,4 +307,30 @@ func (aof *AOF) writeFile(keys map[string]map[int][]byte) error {
 	}
 
 	return nil
+}
+
+/*
+setBucketAndKey returns the bucket and key from a line.
+*/
+func setBucketAndKey(key, line string, keys map[string]map[int][]byte) (string, int, bool) {
+	uPos := strings.LastIndex(key, "_")
+	if uPos < 0 {
+		return "", 0, false
+	}
+
+	bucket := key[:uPos]
+
+	nrID, err := strconv.Atoi(key[uPos+1:])
+	if err != nil {
+		return "", 0, false
+	}
+
+	_, found := keys[bucket]
+	if !found {
+		keys[bucket] = map[int][]byte{}
+	}
+
+	keys[bucket][nrID] = []byte(line)
+
+	return bucket, nrID, true
 }

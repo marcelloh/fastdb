@@ -79,6 +79,45 @@ func Test_OpenPersister_withData(t *testing.T) {
 	}()
 }
 
+func Test_OpenPersister_withWeirdData(t *testing.T) {
+	path := "fast_persister_weird.db"
+
+	defer func() {
+		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		err := os.Remove(filePath)
+		assert.Nil(t, err)
+	}()
+
+	aof, keys, err := persist.OpenPersister(path, syncIime)
+	require.Nil(t, err)
+	assert.NotNil(t, aof)
+	assert.NotNil(t, keys)
+
+	lines := "set\nmyBucket_1\nvalue for key 1\nwith enter\n"
+	err = aof.Write(lines)
+	require.Nil(t, err)
+
+	lines = "set\nmyBucket_2\nvalue for key 2\n"
+	err = aof.Write(lines)
+	require.Nil(t, err)
+
+	err = aof.Close()
+	require.Nil(t, err)
+
+	// here's were we check the actual reading of the data
+
+	aof, keys, err = persist.OpenPersister(path, 0)
+	assert.Nil(t, err)
+	assert.NotNil(t, aof)
+	assert.NotNil(t, keys)
+	assert.Equal(t, 1, len(keys))
+
+	defer func() {
+		err = aof.Close()
+		assert.Nil(t, err)
+	}()
+}
+
 func Test_OpenPersister_writeError(t *testing.T) {
 	path := "fast_persister_write_error.db"
 
@@ -162,11 +201,8 @@ func Test_OpenPersister_withNoNumericKey(t *testing.T) {
 func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 	path := "fast_persister_wrong_instruction.db"
 
-	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
-		err := os.Remove(filePath)
-		assert.Nil(t, err)
-	}()
+	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	_ = os.Remove(filePath)
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
 	require.Nil(t, err)
@@ -186,6 +222,11 @@ func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, aof)
 	assert.Nil(t, keys)
+
+	defer func() {
+		err = os.Remove(filePath)
+		assert.Nil(t, err)
+	}()
 }
 
 func Test_Defrag(t *testing.T) {
