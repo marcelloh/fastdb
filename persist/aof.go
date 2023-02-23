@@ -4,10 +4,8 @@ package persist
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -41,14 +39,12 @@ OpenPersister opens the append only file and reads in all the data.
 func OpenPersister(path string, syncIime int) (*AOF, map[string]map[int][]byte, error) {
 	aof := &AOF{syncIime: syncIime, stop: false}
 
-	dataDir := "./data"
+	filePath := filepath.Clean(path)
 
-	_, err := os.Stat(dataDir)
-	if errors.Is(err, fs.ErrNotExist) {
-		dataDir = "./../data"
+	_, err := os.Stat(filepath.Dir(filePath))
+	if err != nil {
+		return nil, nil, fmt.Errorf("openPersister (%s) error: %w", path, err)
 	}
-
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
 
 	keys, err := aof.getData(filePath)
 	if err != nil {

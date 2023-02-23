@@ -26,10 +26,10 @@ type someRecord struct {
 }
 
 func Test_Open_File_noData(t *testing.T) {
-	path := "fastdb_open_no_data.db"
+	path := "data/fastdb_open_no_data.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -58,7 +58,7 @@ func Test_Open_Memory(t *testing.T) {
 }
 
 func Test_SetGetDel_oneRecord(t *testing.T) {
-	path := "fastdb_set.db"
+	path := "data/fastdb_set.db"
 
 	store, err := fastdb.Open(path, syncIime)
 	assert.Nil(t, err)
@@ -68,7 +68,7 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 		err = store.Close()
 		assert.Nil(t, err)
 
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err = os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -149,8 +149,8 @@ func Test_Get_wrongRecord(t *testing.T) {
 }
 
 func Test_Defrag_1000lines(t *testing.T) {
-	path := "fastdb_defrag1000.db"
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	path := "data/fastdb_defrag1000.db"
+	filePath := filepath.Clean(path)
 
 	defer func() {
 		err := os.Remove(filePath)
@@ -243,9 +243,9 @@ func Test_GetAllFromMemory_1000(t *testing.T) {
 
 func Test_GetAllFromFile_1000(t *testing.T) {
 	total := 1000
-	path := "fastdb_1000.db"
+	path := "data/fastdb_1000.db"
 
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
 
 	defer func() {
@@ -287,14 +287,14 @@ func Test_GetAllFromFile_1000(t *testing.T) {
 }
 
 func Test_Set_error(t *testing.T) {
-	path := "fastdb_set_error.db"
+	path := "data/fastdb_set_error.db"
 
 	store, err := fastdb.Open(path, syncIime)
 	assert.Nil(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err = os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -308,9 +308,9 @@ func Test_Set_error(t *testing.T) {
 }
 
 func Test_Set_wrongBucket(t *testing.T) {
-	path := "fastdb_set_bucket_error.db"
+	path := "data/fastdb_set_bucket_error.db"
 
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
 
 	defer func() {
@@ -343,10 +343,10 @@ func Test_Set_wrongBucket(t *testing.T) {
 }
 
 func Benchmark_Get_File_1000(b *testing.B) {
-	path := "bench-get.db"
+	path := "data/bench-get.db"
 	total := 1000
 
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
 
 	defer func() {
@@ -427,9 +427,9 @@ func Benchmark_Get_Memory_1000(b *testing.B) {
 }
 
 func Benchmark_Set_File_NoSyncTime(b *testing.B) {
-	path := "bench-set.db"
+	path := "data/bench-set.db"
 
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
 
 	defer func() {
@@ -464,9 +464,9 @@ func Benchmark_Set_File_NoSyncTime(b *testing.B) {
 }
 
 func Benchmark_Set_File_WithSyncTime(b *testing.B) {
-	path := "bench-set.db"
+	path := "data/bench-set.db"
 
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
 
 	defer func() {

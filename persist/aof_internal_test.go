@@ -9,19 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	dataDir = "./../data"
-)
-
 func Test_OpenPersister(t *testing.T) {
-	path := "fast_persister_error.db"
+	path := "../data/fast_persister_error.db"
 
 	orgCreate := osCreate
 	osCreate = os.O_RDONLY
 
 	defer func() {
 		osCreate = orgCreate
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		_ = os.Remove(filePath)
 	}()
 
@@ -32,10 +28,10 @@ func Test_OpenPersister(t *testing.T) {
 }
 
 func Test_OpenPersister_closeError(t *testing.T) {
-	path := "fast_persister_close_error.db"
+	path := "../data/fast_persister_close_error.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()

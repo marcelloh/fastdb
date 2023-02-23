@@ -17,10 +17,10 @@ const (
 )
 
 func Test_OpenPersister_noData(t *testing.T) {
-	path := "fast_nodata.db"
+	path := "../data/fast_nodata.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -37,10 +37,10 @@ func Test_OpenPersister_noData(t *testing.T) {
 }
 
 func Test_OpenPersister_withData(t *testing.T) {
-	path := "fast_persister.db"
+	path := "../data/fast_persister.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -80,10 +80,10 @@ func Test_OpenPersister_withData(t *testing.T) {
 }
 
 func Test_OpenPersister_withWeirdData(t *testing.T) {
-	path := "fast_persister_weird.db"
+	path := "../data/fast_persister_weird.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -119,10 +119,10 @@ func Test_OpenPersister_withWeirdData(t *testing.T) {
 }
 
 func Test_OpenPersister_writeError(t *testing.T) {
-	path := "fast_persister_write_error.db"
+	path := "../data/fast_persister_write_error.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -141,10 +141,10 @@ func Test_OpenPersister_writeError(t *testing.T) {
 }
 
 func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
-	path := "fast_persister_wrong_key1.db"
+	path := "../data/fast_persister_wrong_key1.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -170,10 +170,10 @@ func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
 }
 
 func Test_OpenPersister_withNoNumericKey(t *testing.T) {
-	path := "fast_persister_wrong_key.db"
+	path := "../data/fast_persister_wrong_key.db"
 
 	defer func() {
-		filePath := filepath.Join(dataDir, filepath.Clean(path))
+		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
 		assert.Nil(t, err)
 	}()
@@ -199,9 +199,9 @@ func Test_OpenPersister_withNoNumericKey(t *testing.T) {
 }
 
 func Test_OpenPersister_withWrongInstruction(t *testing.T) {
-	path := "fast_persister_wrong_instruction.db"
+	path := "../data/fast_persister_wrong_instruction.db"
 
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
@@ -230,8 +230,8 @@ func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 }
 
 func Test_Defrag(t *testing.T) {
-	path := "fastdb_defrag100.db"
-	filePath := filepath.Join(dataDir, filepath.Clean(path))
+	path := "../data/fastdb_defrag100.db"
+	filePath := filepath.Clean(path)
 
 	defer func() {
 		err := os.Remove(filePath)
