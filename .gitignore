@@ -5,6 +5,7 @@
 /vendor
 
 # IGNORED FILES
+.dccache
 .DS_Store
 *workspace
 *.prof

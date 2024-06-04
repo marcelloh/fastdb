@@ -58,7 +58,7 @@ func main() {
 	start = time.Now()
 	dbRecords, err := store.GetAll("user")
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	log.Printf("read %d records in %s", total, time.Since(start))
@@ -87,7 +87,8 @@ func sortByKey(store *fastdb.DB, dbRecords map[int][]byte) {
 
 	log.Printf("sort %d records by key in %s", count, time.Since(start))
 
-	for key, value := range keys {
+	for key := range keys {
+		value := keys[key]
 		if key >= 15 {
 			break
 		}

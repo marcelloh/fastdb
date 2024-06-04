@@ -3,7 +3,6 @@ package fastdb
 /* ------------------------------- Imports --------------------------- */
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -119,7 +118,7 @@ func (fdb *DB) GetAll(bucket string) (map[int][]byte, error) {
 
 	bmap, found := fdb.keys[bucket]
 	if !found {
-		return nil, errors.New("bucket not found")
+		return nil, fmt.Errorf("bucket (%s) not found", bucket)
 	}
 
 	return bmap, nil

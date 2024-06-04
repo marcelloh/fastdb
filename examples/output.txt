@@ -1,0 +1,12 @@
+
+1 = files
+4 = functions
+106 = function lines
+0 = complex functions
+0 = complex function lines
+9 = highest complexity
+7.50 = overall average complexity per function
+
+0 = complex lines
+
+busy for: 1.190375ms

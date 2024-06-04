@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -68,7 +69,7 @@ func (aof *AOF) getData(path string) (map[string]map[int][]byte, error) {
 		err  error
 	)
 
-	file, err = os.OpenFile(path, os.O_RDWR|osCreate, fileMode) //nolint:gosec // path is clean
+	file, err = os.OpenFile(filepath.Clean(path), os.O_RDWR|osCreate, fileMode) //nolint:gosec // path is clean
 	if err != nil {
 		return nil, fmt.Errorf("openfile (%s) error: %w", path, err)
 	}
@@ -129,6 +130,7 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 			if !isGood {
 				return nil, fmt.Errorf("file (%s) has wrong key format on line: %d", aof.file.Name(), count)
 			}
+
 			count++
 		case "del":
 			isSet = false
@@ -175,12 +177,19 @@ func (aof *AOF) flush() {
 		return
 	}
 
-	flushPause := time.Millisecond * time.Duration(aof.syncIime)
+	log.Println("aof.go:178 flush started")
 
+	flushPause := time.Millisecond * time.Duration(aof.syncIime)
 	tick := time.NewTicker(flushPause)
-	defer tick.Stop()
+
+	defer func() {
+		tick.Stop()
+		log.Println("aof.go:178 flush stopped")
+	}()
 
 	for range tick.C {
+		log.Println("aof.go:178 database synced")
+
 		err := aof.file.Sync()
 		if err != nil {
 			break

@@ -22,7 +22,7 @@ func Test_OpenPersister(t *testing.T) {
 	}()
 
 	aof, keys, err := OpenPersister(path, 0)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, keys)
 	assert.Nil(t, aof)
 }
@@ -33,17 +33,17 @@ func Test_OpenPersister_closeError(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := OpenPersister(path, 100)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	err = aof.file.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = aof.Close()
-	require.NotNil(t, err)
+	require.Error(t, err)
 }

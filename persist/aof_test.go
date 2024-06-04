@@ -22,17 +22,17 @@ func Test_OpenPersister_noData(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	defer func() {
 		err = aof.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -42,40 +42,40 @@ func Test_OpenPersister_withData(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	lines := "set\ntext_1\nvalue for key 1\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	lines = "set\ntext_2\nvalue for key 2\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	lines = "del\ntext_2\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = aof.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// here's were we check the actual reading of the data
 
 	aof, keys, err = persist.OpenPersister(path, 0)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 
 	defer func() {
 		err = aof.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -85,36 +85,36 @@ func Test_OpenPersister_withWeirdData(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	lines := "set\nmyBucket_1\nvalue for key 1\nwith enter\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	lines = "set\nmyBucket_2\nvalue for key 2\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = aof.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// here's were we check the actual reading of the data
 
 	aof, keys, err = persist.OpenPersister(path, 0)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
-	assert.Equal(t, 1, len(keys))
+	assert.Len(t, keys, 1)
 
 	defer func() {
 		err = aof.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -124,20 +124,20 @@ func Test_OpenPersister_writeError(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	err = aof.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	lines := "set\ntext_1\na value\n"
 	err = aof.Write(lines)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
@@ -146,25 +146,25 @@ func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	lines := "set\ntextone\na value\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = aof.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// here's were we check the actual reading of the data
 
 	aof, keys, err = persist.OpenPersister(path, 0)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, aof)
 	assert.Nil(t, keys)
 }
@@ -175,25 +175,25 @@ func Test_OpenPersister_withNoNumericKey(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	lines := "set\nwrong_key\na value\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = aof.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// here's were we check the actual reading of the data
 
 	aof, keys, err = persist.OpenPersister(path, 0)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, aof)
 	assert.Nil(t, keys)
 }
@@ -205,27 +205,27 @@ func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 	_ = os.Remove(filePath)
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	lines := "wrong\ntext_1\na value\n"
 	err = aof.Write(lines)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = aof.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// here's were we check the actual reading of the data
 
 	aof, keys, err = persist.OpenPersister(path, 0)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, aof)
 	assert.Nil(t, keys)
 
 	defer func() {
 		err = os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -235,7 +235,7 @@ func Test_Defrag(t *testing.T) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		_ = os.Remove(filePath + ".bak")
 	}()
@@ -243,19 +243,19 @@ func Test_Defrag(t *testing.T) {
 	total := 100
 
 	aof, keys, err := persist.OpenPersister(path, syncIime)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
 	defer func() {
 		err = aof.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
-	for i := 0; i < total; i++ {
+	for range total {
 		lines := "set\ntext_1\na value for key 1\n"
 		err = aof.Write(lines)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	checkFileLines(t, filePath, total*3)
@@ -263,14 +263,14 @@ func Test_Defrag(t *testing.T) {
 	keys["text"] = map[int][]byte{}
 	keys["text"][1] = []byte("value for key 1")
 	err = aof.Defrag(keys)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	checkFileLines(t, filePath, 3)
 }
 
 func checkFileLines(t *testing.T, filePath string, checkCount int) {
 	readFile, err := os.Open(filePath)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, readFile)
 
 	count := 0
@@ -281,6 +281,6 @@ func checkFileLines(t *testing.T, filePath string, checkCount int) {
 	}
 
 	err = readFile.Close()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, checkCount, count)
 }

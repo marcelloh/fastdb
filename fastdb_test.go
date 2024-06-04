@@ -12,6 +12,7 @@ import (
 
 	"github.com/marcelloh/fastdb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -31,16 +32,16 @@ func Test_Open_File_noData(t *testing.T) {
 	defer func() {
 		filePath := filepath.Clean(path)
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		err = store.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -48,12 +49,12 @@ func Test_Open_Memory(t *testing.T) {
 	path := ":memory:"
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		err = store.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -61,16 +62,16 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 	path := "data/fastdb_set.db"
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		err = store.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		filePath := filepath.Clean(path)
 		err = os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	record := &someRecord{
@@ -82,7 +83,7 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 	recordData, _ := json.Marshal(record)
 
 	err = store.Set("texts", record.ID, recordData)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	info := store.Info()
 	assert.Equal(t, "1 record(s) in 1 bucket(s)", info)
@@ -92,7 +93,7 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 
 	memRecord := &someRecord{}
 	err = json.Unmarshal(memData, &memRecord)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, memRecord)
 	assert.Equal(t, record.UUID, memRecord.UUID)
 	assert.Equal(t, record.Text, memRecord.Text)
@@ -100,16 +101,16 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 
 	// delete in non existing bucket
 	ok, err = store.Del("notexisting", 1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.False(t, ok)
 
 	// delete non existing key
 	ok, err = store.Del("texts", 123)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.False(t, ok)
 
 	ok, err = store.Del("texts", 1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.True(t, ok)
 
 	info = store.Info()
@@ -120,17 +121,17 @@ func Test_Get_wrongRecord(t *testing.T) {
 	path := ":memory:"
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		err = store.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	// store a record
 	err = store.Set("bucket", 1, []byte("a text"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// get same record back
 	memData, ok := store.Get("bucket", 1)
@@ -154,20 +155,18 @@ func Test_Defrag_1000lines(t *testing.T) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		_ = os.Remove(filePath + ".bak")
 	}()
 
-	total := 1000
-
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		err = store.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	record := &someRecord{
@@ -176,21 +175,72 @@ func Test_Defrag_1000lines(t *testing.T) {
 		Text: "a text",
 	}
 
+	// create a lot of records first
+	total := 1000
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
-	for i := 0; i < total; i++ {
+	for range total {
 		record.ID = rdom.Intn(10) + 1
 		recordData, _ := json.Marshal(record)
 
 		err = store.Set("records", record.ID, recordData)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	checkFileLines(t, filePath, total*3)
 
 	err = store.Defrag()
-	assert.Nil(t, err)
+	require.NoError(t, err)
+
+	checkFileLines(t, filePath, 30)
+}
+
+func Test_Defrag_1000000lines(t *testing.T) {
+	path := "data/fastdb_defrag1000000.db"
+	filePath := filepath.Clean(path)
+
+	defer func() {
+		err := os.Remove(filePath)
+		require.NoError(t, err)
+
+		_ = os.Remove(filePath + ".bak")
+	}()
+
+	store, err := fastdb.Open(path, 250)
+	require.NoError(t, err)
+	assert.NotNil(t, store)
+
+	defer func() {
+		err = store.Close()
+		require.NoError(t, err)
+	}()
+
+	record := &someRecord{
+		ID:   1,
+		UUID: "UUIDtext",
+		Text: "a text",
+	}
+
+	// create a lot of records first
+	total := 1000000
+
+	s1 := rand.NewSource(time.Now().UnixNano())
+	rdom := rand.New(s1)
+
+	for range total {
+		record.ID = rdom.Intn(10) + 1
+		recordData, _ := json.Marshal(record)
+
+		err = store.Set("records", record.ID, recordData)
+		require.NoError(t, err)
+	}
+
+	checkFileLines(t, filePath, total*3)
+
+	err = store.Defrag()
+	require.NoError(t, err)
 
 	checkFileLines(t, filePath, 30)
 }
@@ -200,7 +250,7 @@ func Test_GetAllFromMemory_1000(t *testing.T) {
 	path := ":memory:"
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
@@ -228,16 +278,16 @@ func Test_GetAllFromMemory_1000(t *testing.T) {
 		recordData, _ := json.Marshal(record)
 
 		err = store.Set("records", record.ID, recordData)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	records, err := store.GetAll("records")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, records)
-	assert.Equal(t, total, len(records))
+	assert.Len(t, records, total)
 
 	records, err = store.GetAll("wrong_bucket")
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, records)
 }
 
@@ -250,11 +300,11 @@ func Test_GetAllFromFile_1000(t *testing.T) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
@@ -278,11 +328,11 @@ func Test_GetAllFromFile_1000(t *testing.T) {
 		recordData, _ := json.Marshal(record)
 
 		err = store.Set("user", record.ID, recordData)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	records, err := store.GetAll("user")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, records)
 }
 
@@ -290,21 +340,21 @@ func Test_Set_error(t *testing.T) {
 	path := "data/fastdb_set_error.db"
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		filePath := filepath.Clean(path)
 		err = os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	err = store.Close()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// store a record
 	err = store.Set("bucket", 1, []byte("a text"))
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func Test_Set_wrongBucket(t *testing.T) {
@@ -315,30 +365,30 @@ func Test_Set_wrongBucket(t *testing.T) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	// store a record
 	err = store.Set("under_score", 1, []byte("a text for key 1"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = store.Set("under_score", 2, []byte("a text for key 2"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = store.Close()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	store2, err := fastdb.Open(path, syncIime)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, store2)
 
 	defer func() {
 		err = store2.Close()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 }
 
@@ -351,11 +401,11 @@ func Benchmark_Get_File_1000(b *testing.B) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(b, err)
+		require.NoError(b, err)
 	}()
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(b, err)
+	require.NoError(b, err)
 	assert.NotNil(b, store)
 
 	x1 := rand.NewSource(time.Now().UnixNano())
@@ -375,7 +425,7 @@ func Benchmark_Get_File_1000(b *testing.B) {
 		recordData, _ := json.Marshal(record)
 
 		err = store.Set("bench_bucket", record.ID, recordData)
-		assert.Nil(b, err)
+		require.NoError(b, err)
 	}
 
 	b.ResetTimer()
@@ -385,7 +435,7 @@ func Benchmark_Get_File_1000(b *testing.B) {
 	}
 
 	err = store.Close()
-	assert.Nil(b, err)
+	require.NoError(b, err)
 }
 
 func Benchmark_Get_Memory_1000(b *testing.B) {
@@ -393,7 +443,7 @@ func Benchmark_Get_Memory_1000(b *testing.B) {
 	total := 1000
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(b, err)
+	require.NoError(b, err)
 	assert.NotNil(b, store)
 
 	x1 := rand.NewSource(time.Now().UnixNano())
@@ -413,7 +463,7 @@ func Benchmark_Get_Memory_1000(b *testing.B) {
 		recordData, _ := json.Marshal(record)
 
 		err = store.Set("bench_bucket", record.ID, recordData)
-		assert.Nil(b, err)
+		require.NoError(b, err)
 	}
 
 	b.ResetTimer()
@@ -423,7 +473,7 @@ func Benchmark_Get_Memory_1000(b *testing.B) {
 	}
 
 	err = store.Close()
-	assert.Nil(b, err)
+	require.NoError(b, err)
 }
 
 func Benchmark_Set_File_NoSyncTime(b *testing.B) {
@@ -434,11 +484,11 @@ func Benchmark_Set_File_NoSyncTime(b *testing.B) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(b, err)
+		require.NoError(b, err)
 	}()
 
 	store, err := fastdb.Open(path, 0)
-	assert.Nil(b, err)
+	require.NoError(b, err)
 	assert.NotNil(b, store)
 
 	x1 := rand.NewSource(time.Now().UnixNano())
@@ -460,7 +510,7 @@ func Benchmark_Set_File_NoSyncTime(b *testing.B) {
 	}
 
 	err = store.Close()
-	assert.Nil(b, err)
+	require.NoError(b, err)
 }
 
 func Benchmark_Set_File_WithSyncTime(b *testing.B) {
@@ -471,11 +521,11 @@ func Benchmark_Set_File_WithSyncTime(b *testing.B) {
 
 	defer func() {
 		err := os.Remove(filePath)
-		assert.Nil(b, err)
+		require.NoError(b, err)
 	}()
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(b, err)
+	require.NoError(b, err)
 	assert.NotNil(b, store)
 
 	x1 := rand.NewSource(time.Now().UnixNano())
@@ -497,14 +547,14 @@ func Benchmark_Set_File_WithSyncTime(b *testing.B) {
 	}
 
 	err = store.Close()
-	assert.Nil(b, err)
+	require.NoError(b, err)
 }
 
 func Benchmark_Set_Memory(b *testing.B) {
 	path := ":memory:"
 
 	store, err := fastdb.Open(path, syncIime)
-	assert.Nil(b, err)
+	require.NoError(b, err)
 	assert.NotNil(b, store)
 
 	x1 := rand.NewSource(time.Now().UnixNano())
@@ -526,12 +576,12 @@ func Benchmark_Set_Memory(b *testing.B) {
 	}
 
 	err = store.Close()
-	assert.Nil(b, err)
+	require.NoError(b, err)
 }
 
 func checkFileLines(t *testing.T, filePath string, checkCount int) {
 	readFile, err := os.Open(filePath)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, readFile)
 
 	count := 0
@@ -542,7 +592,7 @@ func checkFileLines(t *testing.T, filePath string, checkCount int) {
 	}
 
 	err = readFile.Close()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, checkCount, count)
 }
