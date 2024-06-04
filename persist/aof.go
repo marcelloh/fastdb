@@ -98,16 +98,17 @@ fileReader reads the file and fill the keys.
 */
 func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 	var (
-		count  int
-		line   string
-		bucket string
-		key    string
-		nrID   int
-		isSet  bool
-		isGood bool
+		count     int
+		line      string
+		bucket    string
+		key       string
+		nrID      int
+		isSet     bool
+		isGood    bool
+		scanError error
 	)
 
-	keys := make(map[string]map[int][]byte)
+	keys := make(map[string]map[int][]byte, 1)
 
 	scanner := bufio.NewScanner(aof.file)
 	for scanner.Scan() {
@@ -116,19 +117,9 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 
 		switch line {
 		case "set":
-			isSet = true
-
-			scanner.Scan()
-			key = scanner.Text()
-
-			scanner.Scan()
-			line = scanner.Text()
-
-			count++
-
-			bucket, nrID, isGood = setBucketAndKey(key, line, keys)
+			bucket, nrID, isGood, count = aof.handleSet(scanner, count, keys)
 			if !isGood {
-				return nil, fmt.Errorf("file (%s) has wrong key format on line: %d", aof.file.Name(), count)
+				scanError = fmt.Errorf("file (%s) has wrong key format on line: %d", aof.file.Name(), count)
 			}
 
 			count++
@@ -142,14 +133,37 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 			delete(keys, key)
 		default:
 			if !isSet {
-				return nil, fmt.Errorf("file (%s) has wrong instruction format on line: %d", aof.file.Name(), count)
+				scanError = fmt.Errorf("file (%s) has wrong instruction format on line: %d", aof.file.Name(), count)
+				break
 			}
 
-			keys[bucket][nrID] = append(keys[bucket][nrID], []byte("\n"+line)...)
+			if keys[bucket][nrID] != nil {
+				keys[bucket][nrID] = append(keys[bucket][nrID], []byte("\n"+line)...)
+			} else {
+				keys[bucket][nrID] = []byte("\n" + line)
+			}
+		}
+
+		if scanError != nil {
+			return nil, scanError
 		}
 	}
 
 	return keys, nil
+}
+
+func (*AOF) handleSet(scanner *bufio.Scanner, inpCount int, keys map[string]map[int][]byte) (string, int, bool, int) {
+	scanner.Scan()
+	key := scanner.Text()
+
+	scanner.Scan()
+	line := scanner.Text()
+
+	count := inpCount + 1
+
+	bucket, nrID, isGood := setBucketAndKey(key, line, keys)
+
+	return bucket, nrID, isGood, count
 }
 
 /*

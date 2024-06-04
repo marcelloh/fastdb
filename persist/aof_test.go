@@ -93,7 +93,7 @@ func Test_OpenPersister_withWeirdData(t *testing.T) {
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 
-	lines := "set\nmyBucket_1\nvalue for key 1\nwith enter\n"
+	lines := "set\nmyBucket_1\nvalue for key 1\nwith extra enter\n"
 	err = aof.Write(lines)
 	require.NoError(t, err)
 
@@ -107,15 +107,9 @@ func Test_OpenPersister_withWeirdData(t *testing.T) {
 	// here's were we check the actual reading of the data
 
 	aof, keys, err = persist.OpenPersister(path, 0)
-	require.NoError(t, err)
-	assert.NotNil(t, aof)
-	assert.NotNil(t, keys)
-	assert.Len(t, keys, 1)
-
-	defer func() {
-		err = aof.Close()
-		require.NoError(t, err)
-	}()
+	require.Error(t, err)
+	assert.Nil(t, aof)
+	assert.Empty(t, keys)
 }
 
 func Test_OpenPersister_writeError(t *testing.T) {

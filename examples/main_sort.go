@@ -143,9 +143,13 @@ func fillData(store *fastdb.DB, total int) {
 	for i := 1; i <= total; i++ {
 		user.ID = i
 		user.UUID = "UUIDtext_" + strconv.Itoa(rdom.Intn(100000000)) + strconv.Itoa(user.ID)
-		userData, _ := json.Marshal(user)
 
-		err := store.Set("user", user.ID, userData)
+		userData, err := json.Marshal(user)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = store.Set("user", user.ID, userData)
 		if err != nil {
 			log.Fatal(err)
 		}

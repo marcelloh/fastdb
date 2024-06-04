@@ -80,7 +80,8 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 		Text: "a text",
 	}
 
-	recordData, _ := json.Marshal(record)
+	recordData, err := json.Marshal(record)
+	require.NoError(t, err)
 
 	err = store.Set("texts", record.ID, recordData)
 	require.NoError(t, err)
@@ -181,9 +182,12 @@ func Test_Defrag_1000lines(t *testing.T) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
+	var recordData []byte
+
 	for range total {
 		record.ID = rdom.Intn(10) + 1
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(t, err)
 
 		err = store.Set("records", record.ID, recordData)
 		require.NoError(t, err)
@@ -229,9 +233,12 @@ func Test_Defrag_1000000lines(t *testing.T) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
+	var recordData []byte
+
 	for range total {
 		record.ID = rdom.Intn(10) + 1
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(t, err)
 
 		err = store.Set("records", record.ID, recordData)
 		require.NoError(t, err)
@@ -273,9 +280,12 @@ func Test_GetAllFromMemory_1000(t *testing.T) {
 		Text: "a text",
 	}
 
+	var recordData []byte
+
 	for i := 1; i <= total; i++ {
 		record.ID = i
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(t, err)
 
 		err = store.Set("records", record.ID, recordData)
 		require.NoError(t, err)
@@ -323,9 +333,12 @@ func Test_GetAllFromFile_1000(t *testing.T) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
+	var recordData []byte
+
 	for i := 1; i <= total; i++ {
 		record.ID = rdom.Intn(1000000)
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(t, err)
 
 		err = store.Set("user", record.ID, recordData)
 		require.NoError(t, err)
@@ -420,9 +433,12 @@ func Benchmark_Get_File_1000(b *testing.B) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
+	var recordData []byte
+
 	for i := 1; i <= total; i++ {
 		record.ID = rdom.Intn(1000000)
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(b, err)
 
 		err = store.Set("bench_bucket", record.ID, recordData)
 		require.NoError(b, err)
@@ -455,12 +471,15 @@ func Benchmark_Get_Memory_1000(b *testing.B) {
 		Text: "a text",
 	}
 
+	var recordData []byte
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
 	for i := 1; i <= total; i++ {
 		record.ID = rdom.Intn(1000000)
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(b, err)
 
 		err = store.Set("bench_bucket", record.ID, recordData)
 		require.NoError(b, err)
@@ -500,13 +519,17 @@ func Benchmark_Set_File_NoSyncTime(b *testing.B) {
 		Text: "a text",
 	}
 
+	var recordData []byte
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ { // use b.N for looping
 		record.ID = rand.Intn(1000000)
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(b, err)
 
-		_ = store.Set("user", record.ID, recordData)
+		err = store.Set("user", record.ID, recordData)
+		require.NoError(b, err)
 	}
 
 	err = store.Close()
@@ -537,13 +560,17 @@ func Benchmark_Set_File_WithSyncTime(b *testing.B) {
 		Text: "a text",
 	}
 
+	var recordData []byte
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ { // use b.N for looping
 		record.ID = rand.Intn(1000000)
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(b, err)
 
-		_ = store.Set("user", record.ID, recordData)
+		err = store.Set("user", record.ID, recordData)
+		require.NoError(b, err)
 	}
 
 	err = store.Close()
@@ -566,13 +593,17 @@ func Benchmark_Set_Memory(b *testing.B) {
 		Text: "a text",
 	}
 
+	var recordData []byte
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ { // use b.N for looping
 		record.ID = rand.Intn(1000000)
-		recordData, _ := json.Marshal(record)
+		recordData, err = json.Marshal(record)
+		require.NoError(b, err)
 
-		_ = store.Set("user", record.ID, recordData)
+		err = store.Set("user", record.ID, recordData)
+		require.NoError(b, err)
 	}
 
 	err = store.Close()
