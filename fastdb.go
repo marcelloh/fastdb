@@ -125,6 +125,27 @@ func (fdb *DB) GetAll(bucket string) (map[int][]byte, error) {
 }
 
 /*
+GetNewIndex returns the next available index for a bucket.
+*/
+func (fdb *DB) GetNewIndex(bucket string) (newKey int, err error) {
+	memRecords, err := fdb.GetAll(bucket)
+	if err != nil {
+		return 0, err
+	}
+
+	lkey := 0
+	for key := range memRecords {
+		if key > lkey {
+			lkey = key
+		}
+	}
+
+	newKey = lkey + 1
+
+	return newKey, nil
+}
+
+/*
 Info returns info about the storage.
 */
 func (fdb *DB) Info() string {
