@@ -63,14 +63,14 @@ func main() {
 
 	log.Printf("read %d records in %s", total, time.Since(start))
 
-	sortByKey(store, dbRecords)
-	sortByUUID(store, dbRecords)
+	sortByKey(dbRecords)
+	sortByUUID(dbRecords)
 }
 
 /*
 sortByKey sorts the records by key.
 */
-func sortByKey(store *fastdb.DB, dbRecords map[int][]byte) {
+func sortByKey(dbRecords map[int][]byte) {
 	start := time.Now()
 	count := 0
 	keys := make([]record, len(dbRecords))
@@ -100,7 +100,7 @@ func sortByKey(store *fastdb.DB, dbRecords map[int][]byte) {
 /*
 sortByUUID sorts the records by UUID.
 */
-func sortByUUID(store *fastdb.DB, dbRecords map[int][]byte) {
+func sortByUUID(dbRecords map[int][]byte) {
 	start := time.Now()
 	count := 0
 	keys := make([]record, len(dbRecords))

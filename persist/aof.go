@@ -100,10 +100,7 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 	var (
 		count     int
 		line      string
-		bucket    string
 		key       string
-		nrID      int
-		isSet     bool
 		isGood    bool
 		scanError error
 	)
@@ -117,31 +114,20 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 
 		switch line {
 		case "set":
-			bucket, nrID, isGood, count = aof.handleSet(scanner, count, keys)
+			isGood, count = aof.handleSet(scanner, count, keys)
 			if !isGood {
 				scanError = fmt.Errorf("file (%s) has wrong key format on line: %d", aof.file.Name(), count)
 			}
 
 			count++
 		case "del":
-			isSet = false
-
 			scanner.Scan()
 			key = scanner.Text()
 			count++
 
 			delete(keys, key)
 		default:
-			if !isSet {
-				scanError = fmt.Errorf("file (%s) has wrong instruction format on line: %d", aof.file.Name(), count)
-				break
-			}
-
-			if keys[bucket][nrID] != nil {
-				keys[bucket][nrID] = append(keys[bucket][nrID], []byte("\n"+line)...)
-			} else {
-				keys[bucket][nrID] = []byte("\n" + line)
-			}
+			scanError = fmt.Errorf("file (%s) has wrong instruction format on line: %d", aof.file.Name(), count)
 		}
 
 		if scanError != nil {
@@ -152,7 +138,10 @@ func (aof *AOF) fileReader() (map[string]map[int][]byte, error) {
 	return keys, nil
 }
 
-func (*AOF) handleSet(scanner *bufio.Scanner, inpCount int, keys map[string]map[int][]byte) (string, int, bool, int) {
+/*
+handleSet handles the set instruction.
+*/
+func (*AOF) handleSet(scanner *bufio.Scanner, inpCount int, keys map[string]map[int][]byte) (bool, int) {
 	scanner.Scan()
 	key := scanner.Text()
 
@@ -161,9 +150,9 @@ func (*AOF) handleSet(scanner *bufio.Scanner, inpCount int, keys map[string]map[
 
 	count := inpCount + 1
 
-	bucket, nrID, isGood := setBucketAndKey(key, line, keys)
+	isGood := setBucketAndKey(key, line, keys)
 
-	return bucket, nrID, isGood, count
+	return isGood, count
 }
 
 /*
@@ -191,7 +180,7 @@ func (aof *AOF) flush() {
 		return
 	}
 
-	log.Println("aof.go:178 flush started")
+	log.Println("aof.go:196 flush started")
 
 	flushPause := time.Millisecond * time.Duration(aof.syncIime)
 	tick := time.NewTicker(flushPause)
@@ -331,17 +320,17 @@ func (aof *AOF) writeFile(keys map[string]map[int][]byte) error {
 /*
 setBucketAndKey returns the bucket and key from a line.
 */
-func setBucketAndKey(key, line string, keys map[string]map[int][]byte) (string, int, bool) {
+func setBucketAndKey(key, line string, keys map[string]map[int][]byte) bool {
 	uPos := strings.LastIndex(key, "_")
 	if uPos < 0 {
-		return "", 0, false
+		return false
 	}
 
 	bucket := key[:uPos]
 
 	nrID, err := strconv.Atoi(key[uPos+1:])
 	if err != nil {
-		return "", 0, false
+		return false
 	}
 
 	_, found := keys[bucket]
@@ -351,5 +340,5 @@ func setBucketAndKey(key, line string, keys map[string]map[int][]byte) (string, 
 
 	keys[bucket][nrID] = []byte(line)
 
-	return bucket, nrID, true
+	return true
 }

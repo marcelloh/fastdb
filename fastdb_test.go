@@ -18,6 +18,7 @@ import (
 const (
 	syncIime = 100
 	dataDir  = "./data"
+	memory   = ":memory:"
 )
 
 type someRecord struct {
@@ -46,7 +47,7 @@ func Test_Open_File_noData(t *testing.T) {
 }
 
 func Test_Open_Memory(t *testing.T) {
-	path := ":memory:"
+	path := memory
 
 	store, err := fastdb.Open(path, syncIime)
 	require.NoError(t, err)
@@ -119,7 +120,7 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 }
 
 func Test_Get_wrongRecord(t *testing.T) {
-	path := ":memory:"
+	path := memory
 
 	store, err := fastdb.Open(path, syncIime)
 	require.NoError(t, err)
@@ -254,7 +255,7 @@ func Test_Defrag_1000000lines(t *testing.T) {
 
 func Test_GetAllFromMemory_1000(t *testing.T) {
 	total := 1000
-	path := ":memory:"
+	path := memory
 
 	store, err := fastdb.Open(path, syncIime)
 	require.NoError(t, err)
@@ -455,7 +456,7 @@ func Benchmark_Get_File_1000(b *testing.B) {
 }
 
 func Benchmark_Get_Memory_1000(b *testing.B) {
-	path := ":memory:"
+	path := memory
 	total := 1000
 
 	store, err := fastdb.Open(path, syncIime)
@@ -578,7 +579,7 @@ func Benchmark_Set_File_WithSyncTime(b *testing.B) {
 }
 
 func Benchmark_Set_Memory(b *testing.B) {
-	path := ":memory:"
+	path := memory
 
 	store, err := fastdb.Open(path, syncIime)
 	require.NoError(b, err)
