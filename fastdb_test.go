@@ -77,9 +77,8 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 
 	var newKey int
 
-	newKey, err = store.GetNewIndex("texts")
-	require.Error(t, err)
-	assert.Equal(t, 0, newKey)
+	newKey = store.GetNewIndex("texts")
+	assert.Equal(t, 1, newKey)
 
 	record := &someRecord{
 		ID:   1,
@@ -93,8 +92,7 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 	err = store.Set("texts", record.ID, recordData)
 	require.NoError(t, err)
 
-	newKey, err = store.GetNewIndex("texts")
-	require.NoError(t, err)
+	newKey = store.GetNewIndex("texts")
 	assert.Equal(t, 2, newKey)
 
 	info := store.Info()
@@ -125,9 +123,8 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, ok)
 
-	newKey, err = store.GetNewIndex("texts")
-	require.Error(t, err)
-	assert.Equal(t, 0, newKey)
+	newKey = store.GetNewIndex("texts")
+	assert.Equal(t, 1, newKey)
 
 	info = store.Info()
 	assert.Equal(t, "0 record(s) in 0 bucket(s)", info)

@@ -127,10 +127,10 @@ func (fdb *DB) GetAll(bucket string) (map[int][]byte, error) {
 /*
 GetNewIndex returns the next available index for a bucket.
 */
-func (fdb *DB) GetNewIndex(bucket string) (newKey int, err error) {
+func (fdb *DB) GetNewIndex(bucket string) (newKey int) {
 	memRecords, err := fdb.GetAll(bucket)
 	if err != nil {
-		return 0, err
+		return 1
 	}
 
 	lkey := 0
@@ -142,7 +142,7 @@ func (fdb *DB) GetNewIndex(bucket string) (newKey int, err error) {
 
 	newKey = lkey + 1
 
-	return newKey, nil
+	return newKey
 }
 
 /*
