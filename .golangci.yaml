@@ -467,6 +467,10 @@ linters-settings:
         # Whether to restrict checker to params only.
         # Default: true
         paramsOnly: false
+      commentedOutCode:
+        # Min length of the comment that triggers a warning.
+        # Default: 15
+        minLength: 80
       elseif:
         # Whether to skip balanced if-else pairs.
         # Default: true
@@ -1116,7 +1120,8 @@ linters-settings:
         severity: warning
         disabled: false
         arguments:
-          - [ "call-chain", "loop" ]
+          # - [ "call-chain", "loop" ]
+          - [ "loop" ]
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#dot-imports
       - name: dot-imports
         severity: warning
@@ -1668,10 +1673,10 @@ linters-settings:
     force-case-trailing-whitespace: 0
     
     # Allow blocks to end with comments.
-    allow-trailing-comment: false
+    allow-trailing-comment: true
     
     # Allow multiple comments in the beginning of a block separated with newline.
-    allow-separated-leading-comment: false
+    allow-separated-leading-comment: true
     
     # Allow multiple var/declaration statements to be cuddled.
     allow-cuddle-declarations: false
@@ -1774,6 +1779,8 @@ issues:
         - depguard
         - dupl
         - exhaustruct
+        - funlen
+        - gocognit
         - goconst
         - mnd
         - gosec
