@@ -3,7 +3,10 @@ package fastdb
 /* ------------------------------- Imports --------------------------- */
 
 import (
+	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"sync"
 
@@ -19,6 +22,12 @@ type DB struct {
 	mu   sync.RWMutex
 }
 
+// SortRecord represents a record from a sorted collection of sliced records
+type SortRecord struct {
+	SortField any
+	Data      []byte
+}
+
 /* -------------------------- Methods/Functions ---------------------- */
 
 /*
@@ -32,7 +41,7 @@ func Open(path string, syncIime int) (*DB, error) {
 		err error
 	)
 
-	keys := make(map[string]map[int][]byte)
+	keys := map[string]map[int][]byte{}
 
 	if path != ":memory:" {
 		aof, keys, err = persist.OpenPersister(path, syncIime)
@@ -45,8 +54,7 @@ func Open(path string, syncIime int) (*DB, error) {
 Defrag optimises the file to reflect the latest state.
 */
 func (fdb *DB) Defrag() error {
-	fdb.mu.Lock()
-	defer fdb.mu.Unlock()
+	defer fdb.lockUnlock()()
 
 	var err error
 
@@ -62,10 +70,9 @@ func (fdb *DB) Defrag() error {
 Del deletes one map value in a bucket.
 */
 func (fdb *DB) Del(bucket string, key int) (bool, error) {
-	var err error
+	defer fdb.lockUnlock()()
 
-	fdb.mu.Lock()
-	defer fdb.mu.Unlock()
+	var err error
 
 	// bucket exists?
 	_, found := fdb.keys[bucket]
@@ -110,7 +117,7 @@ func (fdb *DB) Get(bucket string, key int) ([]byte, bool) {
 }
 
 /*
-GetAll returns all map values from a bucket.
+GetAll returns all map values from a bucket in random order.
 */
 func (fdb *DB) GetAll(bucket string) (map[int][]byte, error) {
 	fdb.mu.RLock()
@@ -122,6 +129,28 @@ func (fdb *DB) GetAll(bucket string) (map[int][]byte, error) {
 	}
 
 	return bmap, nil
+}
+
+/*
+GetAllSorted returns all map values from a bucket in Key sorted order.
+*/
+func (fdb *DB) GetAllSorted(bucket string) ([]*SortRecord, error) {
+	memRecords, err := fdb.GetAll(bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	sortedKeys := slices.Sorted(maps.Keys(memRecords))
+
+	sortedRecords := make([]*SortRecord, len(memRecords))
+	count := 0
+
+	for _, key := range sortedKeys {
+		sortedRecords[count] = &SortRecord{SortField: key, Data: memRecords[key]}
+		count++
+	}
+
+	return sortedRecords, nil
 }
 
 /*
@@ -161,15 +190,18 @@ func (fdb *DB) Info() string {
 Set stores one map value in a bucket.
 */
 func (fdb *DB) Set(bucket string, key int, value []byte) error {
-	fdb.mu.Lock()
-	defer fdb.mu.Unlock()
+	defer fdb.lockUnlock()()
+
+	if key < 0 {
+		return errors.New("set->key should be positive")
+	}
 
 	if fdb.aof != nil {
 		lines := "set\n" + bucket + "_" + strconv.Itoa(key) + "\n" + string(value) + "\n"
 
 		err := fdb.aof.Write(lines)
 		if err != nil {
-			return fmt.Errorf("sel->write error: %w", err)
+			return fmt.Errorf("set->write error: %w", err)
 		}
 	}
 
@@ -188,8 +220,7 @@ Close closes the database.
 */
 func (fdb *DB) Close() error {
 	if fdb.aof != nil {
-		fdb.mu.Lock()
-		defer fdb.mu.Unlock()
+		defer fdb.lockUnlock()()
 
 		err := fdb.aof.Close()
 		if err != nil {
@@ -197,7 +228,26 @@ func (fdb *DB) Close() error {
 		}
 	}
 
-	fdb.keys = make(map[string]map[int][]byte)
+	fdb.keys = map[string]map[int][]byte{}
 
 	return nil
+}
+
+/*
+lockUnlock locks the database and unlocks it later
+
+if you call it like this: defer fdb.lockUnlock()()
+the first function call locks it and because it returns a function,
+that function will actually be called as the defer.
+*/
+func (fdb *DB) lockUnlock() func() {
+	fdb.mu.Lock()
+	//nolint:gocritic // leave it here
+	// log.Println("> Locked")
+
+	return func() {
+		fdb.mu.Unlock()
+		//nolint:gocritic // leave it here
+		// log.Println("> Unlocked")
+	}
 }
