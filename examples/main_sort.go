@@ -6,10 +6,10 @@ package main
 /* ------------------------------- Imports --------------------------- */
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"sort"
 	"strconv"
 	"time"
@@ -49,9 +49,9 @@ func main() {
 		}
 	}()
 
-	total := 100000
-	start := time.Now()
+	total := 100000 // nr of records to work with
 
+	start := time.Now()
 	fillData(store, total)
 	log.Printf("created %d records in %s", total, time.Since(start))
 
@@ -63,38 +63,7 @@ func main() {
 
 	log.Printf("read %d records in %s", total, time.Since(start))
 
-	sortByKey(dbRecords)
 	sortByUUID(dbRecords)
-}
-
-/*
-sortByKey sorts the records by key.
-*/
-func sortByKey(dbRecords map[int][]byte) {
-	start := time.Now()
-	count := 0
-	keys := make([]record, len(dbRecords))
-
-	for key := range dbRecords {
-		myKM := record{SortField: key, Data: dbRecords[key]}
-		keys[count] = myKM
-		count++
-	}
-
-	sort.Slice(keys, func(i, j int) bool {
-		return keys[i].SortField.(int) < keys[j].SortField.(int)
-	})
-
-	log.Printf("sort %d records by key in %s", count, time.Since(start))
-
-	for key := range keys {
-		value := keys[key]
-		if key >= 15 {
-			break
-		}
-
-		fmt.Printf("value : %v\n", string(value.Data))
-	}
 }
 
 /*
@@ -107,12 +76,8 @@ func sortByUUID(dbRecords map[int][]byte) {
 
 	for key := range dbRecords {
 		json := string(dbRecords[key])
-
 		value := gjson.Get(json, "UUID").Str + strconv.Itoa(key)
-
-		myKM := record{SortField: value, Data: dbRecords[key]}
-
-		keys[count] = myKM
+		keys[count] = record{SortField: value, Data: dbRecords[key]}
 		count++
 	}
 
@@ -138,11 +103,9 @@ func fillData(store *fastdb.DB, total int) {
 		Email: "test@example.com",
 	}
 
-	rdom := rand.New(rand.NewSource(time.Now().UnixNano()))
-
 	for i := 1; i <= total; i++ {
 		user.ID = i
-		user.UUID = "UUIDtext_" + strconv.Itoa(rdom.Intn(100000000)) + strconv.Itoa(user.ID)
+		user.UUID = "UUIDtext_" + generateRandomString(8) + strconv.Itoa(user.ID)
 
 		userData, err := json.Marshal(user)
 		if err != nil {
@@ -154,4 +117,22 @@ func fillData(store *fastdb.DB, total int) {
 			log.Fatal(err)
 		}
 	}
+}
+
+// generateRandomString creates a random string of the specified length
+func generateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	b := make([]byte, length)
+
+	_, err := rand.Read(b)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i := range b {
+		b[i] = charset[int(b[i])%len(charset)]
+	}
+
+	return string(b)
 }
