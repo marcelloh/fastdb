@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -69,7 +68,12 @@ func (aof *AOF) getData(path string) (map[string]map[int][]byte, error) {
 		err  error
 	)
 
-	file, err = os.OpenFile(filepath.Clean(path), os.O_RDWR|osCreate, fileMode) //nolint:gosec // path is clean
+	filePath := filepath.Clean(path)
+	if filePath != path {
+		return nil, fmt.Errorf("getData error: invalid path '%s'", path)
+	}
+
+	file, err = os.OpenFile(filePath, os.O_RDWR|osCreate, fileMode) //nolint:gosec // path is clean
 	if err != nil {
 		return nil, fmt.Errorf("openfile (%s) error: %w", path, err)
 	}
@@ -180,19 +184,14 @@ func (aof *AOF) flush() {
 		return
 	}
 
-	log.Println("aof.go:196 flush started")
-
 	flushPause := time.Millisecond * time.Duration(aof.syncIime)
 	tick := time.NewTicker(flushPause)
 
 	defer func() {
 		tick.Stop()
-		log.Println("aof.go:178 flush stopped")
 	}()
 
 	for range tick.C {
-		log.Println("aof.go:178 database synced")
-
 		err := aof.file.Sync()
 		if err != nil {
 			break
