@@ -1713,6 +1713,7 @@ linters:
     - err113
     - errchkjson
     - execinquery
+    - exportloopref
     - exhaustruct
     - forbidigo
     - gochecknoglobals

@@ -72,6 +72,9 @@ func Test_OpenPersister_withData(t *testing.T) {
 	assert.NotNil(t, aof)
 	assert.NotNil(t, keys)
 	assert.Len(t, keys, 1)
+	bucketKeys := keys["text"]
+	assert.NotNil(t, bucketKeys)
+	assert.Len(t, bucketKeys, 1)
 
 	defer func() {
 		err = aof.Close()

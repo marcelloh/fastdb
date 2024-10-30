@@ -1,10 +1,10 @@
 module github.com/marcelloh/fastdb
 
-go 1.23
+go 1.23.2
 
 require (
 	github.com/stretchr/testify v1.9.0
-	github.com/tidwall/gjson v1.17.3
+	github.com/tidwall/gjson v1.18.0
 )
 
 require (

@@ -145,9 +145,6 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 	defer func() {
 		err = store.Close()
 		require.NoError(f, err)
-
-		err = os.Remove(filePath)
-		require.NoError(f, err)
 	}()
 
 	var newKey int
@@ -155,8 +152,11 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 	newKey = store.GetNewIndex("texts")
 	assert.Equal(f, 1, newKey)
 
-	testcases := []int{1, 2, 3, 4, 5}
-	for _, tc := range testcases {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	rdom := rand.New(s1)
+
+	for range 5 {
+		tc := rdom.Intn(10000) + 1
 		f.Add(tc) // Use f.Add to provide a seed corpus
 	}
 
@@ -166,6 +166,9 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 		Text: "a text",
 	}
 
+	counter := 0
+	highest := 0
+
 	f.Fuzz(func(t *testing.T, id int) {
 		if id < 0 {
 			return
@@ -173,17 +176,27 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 
 		record.ID = id
 
+		if highest < id {
+			highest = id
+		}
+
 		recordData, err := json.Marshal(record)
 		require.NoError(t, err)
+
+		_, ok := store.Get("texts", id)
+		if !ok {
+			counter++
+		}
 
 		err = store.Set("texts", record.ID, recordData)
 		require.NoError(t, err)
 
 		newKey = store.GetNewIndex("texts")
-		assert.Equal(t, id+1, newKey)
+		assert.Equal(t, highest+1, newKey, id)
 
 		info := store.Info()
-		assert.Equal(t, "1 record(s) in 1 bucket(s)", info)
+		text := fmt.Sprintf("%d record(s) in 1 bucket(s)", counter)
+		assert.Equal(t, text, info, id)
 
 		memData, ok := store.Get("texts", id)
 		assert.True(t, ok)
@@ -192,15 +205,103 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 		err = json.Unmarshal(memData, &memRecord)
 		require.NoError(t, err)
 
-		ok, err = store.Del("texts", id)
+		if id%5 == 0 {
+			ok, err = store.Del("texts", id)
+			require.NoError(t, err)
+			assert.True(t, ok)
+
+			counter--
+
+			newKey = store.GetNewIndex("texts")
+			highest = newKey - 1
+		}
+	})
+}
+
+func Fuzz_2SetGetDel_oneRecord(f *testing.F) {
+	path := "data/fastdb_fuzzset.db"
+	// path := ":memory:"
+
+	filePath := filepath.Clean(path)
+	_ = os.Remove(filePath)
+
+	store, err := fastdb.Open(filePath, 1000)
+	require.NoError(f, err)
+	assert.NotNil(f, store)
+
+	defer func() {
+		err = store.Close()
+		require.NoError(f, err)
+	}()
+
+	var newKey int
+
+	newKey = store.GetNewIndex("texts")
+	assert.Equal(f, 1, newKey)
+
+	s1 := rand.NewSource(time.Now().UnixNano())
+	rdom := rand.New(s1)
+
+	for range 5 {
+		tc := rdom.Intn(10000) + 1
+		f.Add(tc) // Use f.Add to provide a seed corpus
+	}
+
+	record := &someRecord{
+		ID:   1,
+		UUID: "UUIDtext",
+		Text: "a text",
+	}
+
+	counter := 0
+	highest := 0
+
+	f.Fuzz(func(t *testing.T, id int) {
+		if id < 0 {
+			return
+		}
+
+		record.ID = id
+
+		if highest < id {
+			highest = id
+		}
+
+		recordData, err := json.Marshal(record)
 		require.NoError(t, err)
-		assert.True(t, ok)
+
+		_, ok := store.Get("texts", id)
+		if !ok {
+			counter++
+		}
+
+		err = store.Set("texts", record.ID, recordData)
+		require.NoError(t, err)
 
 		newKey = store.GetNewIndex("texts")
-		assert.Equal(t, 1, newKey)
+		assert.Equal(t, highest+1, newKey, id)
 
-		info = store.Info()
-		assert.Equal(t, "0 record(s) in 0 bucket(s)", info)
+		info := store.Info()
+		text := fmt.Sprintf("%d record(s) in 1 bucket(s)", counter)
+		assert.Equal(t, text, info, id)
+
+		memData, ok := store.Get("texts", id)
+		assert.True(t, ok)
+
+		memRecord := &someRecord{}
+		err = json.Unmarshal(memData, &memRecord)
+		require.NoError(t, err)
+
+		if id%5 == 0 {
+			ok, err = store.Del("texts", id)
+			require.NoError(t, err)
+			assert.True(t, ok)
+
+			counter--
+
+			newKey = store.GetNewIndex("texts")
+			highest = newKey - 1
+		}
 	})
 }
 
@@ -289,7 +390,7 @@ func Test_Defrag_1000000lines(t *testing.T) {
 	path := "data/fastdb_defrag1000000.db"
 	filePath := filepath.Clean(path)
 
-	store, err := fastdb.Open(path, 250)
+	store, err := fastdb.Open(filePath, 250)
 	require.NoError(t, err)
 	assert.NotNil(t, store)
 
@@ -297,8 +398,7 @@ func Test_Defrag_1000000lines(t *testing.T) {
 		err = store.Close()
 		require.NoError(t, err)
 
-		err = os.Remove(filePath)
-		require.NoError(t, err)
+		_ = os.Remove(filePath)
 
 		_ = os.Remove(filePath + ".bak")
 	}()

@@ -143,11 +143,10 @@ func (fdb *DB) GetAllSorted(bucket string) ([]*SortRecord, error) {
 	sortedKeys := slices.Sorted(maps.Keys(memRecords))
 
 	sortedRecords := make([]*SortRecord, len(memRecords))
-	count := 0
 
-	for _, key := range sortedKeys {
+	for count, key := range sortedKeys {
 		sortedRecords[count] = &SortRecord{SortField: key, Data: memRecords[key]}
-		count++
+		// count++
 	}
 
 	return sortedRecords, nil
