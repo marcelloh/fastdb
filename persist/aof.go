@@ -23,7 +23,6 @@ type AOF struct {
 	file     *os.File
 	syncTime int
 	mu       sync.RWMutex
-	stop     bool
 }
 
 var (
@@ -37,9 +36,12 @@ var (
 OpenPersister opens the append only file and reads in all the data.
 */
 func OpenPersister(path string, syncIime int) (*AOF, map[string]map[int][]byte, error) {
-	aof := &AOF{syncTime: syncIime, stop: false}
+	aof := &AOF{syncTime: syncIime}
 
 	filePath := filepath.Clean(path)
+	if filePath != path {
+		return nil, nil, fmt.Errorf("openPersister error: invalid path '%s'", path)
+	}
 
 	_, err := os.Stat(filepath.Dir(filePath))
 	if err != nil {
@@ -63,17 +65,12 @@ func (aof *AOF) getData(path string) (map[string]map[int][]byte, error) {
 	aof.mu.Lock()
 	defer aof.mu.Unlock()
 
-	filePath := filepath.Clean(path)
-	if filePath != path {
-		return nil, fmt.Errorf("getData error: invalid path '%s'", path)
-	}
-
 	var (
 		file *os.File
 		err  error
 	)
 
-	file, err = os.OpenFile(filePath, os.O_RDWR|osCreate, fileMode) //nolint:gosec // path is clean
+	file, err = os.OpenFile(path, os.O_RDWR|osCreate, fileMode) //nolint:gosec // path is clean
 	if err != nil {
 		return nil, fmt.Errorf("openfile (%s) error: %w", path, err)
 	}

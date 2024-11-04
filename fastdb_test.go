@@ -133,7 +133,6 @@ func Test_SetGetDel_oneRecord(t *testing.T) {
 
 func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 	path := "data/fastdb_fuzzset.db"
-	// path := ":memory:"
 
 	filePath := filepath.Clean(path)
 	_ = os.Remove(filePath)
@@ -155,94 +154,7 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rdom := rand.New(s1)
 
-	for range 5 {
-		tc := rdom.Intn(10000) + 1
-		f.Add(tc) // Use f.Add to provide a seed corpus
-	}
-
-	record := &someRecord{
-		ID:   1,
-		UUID: "UUIDtext",
-		Text: "a text",
-	}
-
-	counter := 0
-	highest := 0
-
-	f.Fuzz(func(t *testing.T, id int) {
-		if id < 0 {
-			return
-		}
-
-		record.ID = id
-
-		if highest < id {
-			highest = id
-		}
-
-		recordData, err := json.Marshal(record)
-		require.NoError(t, err)
-
-		_, ok := store.Get("texts", id)
-		if !ok {
-			counter++
-		}
-
-		err = store.Set("texts", record.ID, recordData)
-		require.NoError(t, err)
-
-		newKey = store.GetNewIndex("texts")
-		assert.Equal(t, highest+1, newKey, id)
-
-		info := store.Info()
-		text := fmt.Sprintf("%d record(s) in 1 bucket(s)", counter)
-		assert.Equal(t, text, info, id)
-
-		memData, ok := store.Get("texts", id)
-		assert.True(t, ok)
-
-		memRecord := &someRecord{}
-		err = json.Unmarshal(memData, &memRecord)
-		require.NoError(t, err)
-
-		if id%5 == 0 {
-			ok, err = store.Del("texts", id)
-			require.NoError(t, err)
-			assert.True(t, ok)
-
-			counter--
-
-			newKey = store.GetNewIndex("texts")
-			highest = newKey - 1
-		}
-	})
-}
-
-func Fuzz_2SetGetDel_oneRecord(f *testing.F) {
-	path := "data/fastdb_fuzzset.db"
-	// path := ":memory:"
-
-	filePath := filepath.Clean(path)
-	_ = os.Remove(filePath)
-
-	store, err := fastdb.Open(filePath, 1000)
-	require.NoError(f, err)
-	assert.NotNil(f, store)
-
-	defer func() {
-		err = store.Close()
-		require.NoError(f, err)
-	}()
-
-	var newKey int
-
-	newKey = store.GetNewIndex("texts")
-	assert.Equal(f, 1, newKey)
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	rdom := rand.New(s1)
-
-	for range 5 {
+	for range 50 {
 		tc := rdom.Intn(10000) + 1
 		f.Add(tc) // Use f.Add to provide a seed corpus
 	}
