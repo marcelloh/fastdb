@@ -3,6 +3,7 @@ package persist
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,12 +13,17 @@ import (
 func Test_OpenPersister(t *testing.T) {
 	path := "../data/fast_persister_error.db"
 
+	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
+
 	orgCreate := osCreate
+
 	osCreate = os.O_RDONLY
 
 	defer func() {
 		osCreate = orgCreate
+
 		filePath := filepath.Clean(path)
+
 		_ = os.Remove(filePath)
 	}()
 
@@ -29,6 +35,8 @@ func Test_OpenPersister(t *testing.T) {
 
 func Test_OpenPersister_closeError(t *testing.T) {
 	path := "../data/fast_persister_close_error.db"
+
+	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
 
 	defer func() {
 		filePath := filepath.Clean(path)

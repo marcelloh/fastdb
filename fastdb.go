@@ -8,6 +8,7 @@ import (
 	"maps"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/marcelloh/fastdb/persist"
@@ -35,16 +36,16 @@ Open opens a database at the provided path.
 If the file doesn't exist, it will be created automatically.
 If the path is ':memory:' then the database will be opened in memory only.
 */
-func Open(path string, syncIime int) (*DB, error) {
+func Open(path string, syncTime int) (*DB, error) {
 	var (
 		aof *persist.AOF
 		err error
 	)
 
-	keys := map[string]map[int][]byte{}
+	keys := make(map[string]map[int][]byte)
 
 	if path != ":memory:" {
-		aof, keys, err = persist.OpenPersister(path, syncIime)
+		aof, keys, err = persist.OpenPersister(path, syncTime)
 	}
 
 	return &DB{aof: aof, keys: keys}, err //nolint:wrapcheck // it is already wrapped
@@ -87,9 +88,9 @@ func (fdb *DB) Del(bucket string, key int) (bool, error) {
 	}
 
 	if fdb.aof != nil {
-		lines := "del\n" + bucket + "_" + strconv.Itoa(key) + "\n"
-
-		err = fdb.aof.Write(lines)
+		// Ensure we have a clean format for the delete command
+		// and no additional data
+		err = fdb.aof.Write(formatCommand("del", bucket, key, ""))
 		if err != nil {
 			return false, fmt.Errorf("del->write error: %w", err)
 		}
@@ -191,14 +192,15 @@ Set stores one map value in a bucket.
 func (fdb *DB) Set(bucket string, key int, value []byte) error {
 	defer fdb.lockUnlock()()
 
-	if key < 0 {
-		return errors.New("set->key should be positive")
+	var err error
+
+	err = validateSetInput(bucket, key)
+	if err != nil {
+		return fmt.Errorf("set->write error: %w", err)
 	}
 
 	if fdb.aof != nil {
-		lines := "set\n" + bucket + "_" + strconv.Itoa(key) + "\n" + string(value) + "\n"
-
-		err := fdb.aof.Write(lines)
+		err = fdb.aof.Write(formatCommand("set", bucket, key, string(value)))
 		if err != nil {
 			return fmt.Errorf("set->write error: %w", err)
 		}
@@ -206,12 +208,48 @@ func (fdb *DB) Set(bucket string, key int, value []byte) error {
 
 	_, found := fdb.keys[bucket]
 	if !found {
-		fdb.keys[bucket] = map[int][]byte{}
+		fdb.keys[bucket] = make(map[int][]byte)
 	}
 
 	fdb.keys[bucket][key] = value
 
 	return nil
+}
+
+/*
+validateSetInput checks if the input is valid
+*/
+func validateSetInput(bucket string, key int) error {
+	if bucket == "" {
+		return errors.New("set->bucket name cannot be empty")
+	}
+
+	if key < 0 {
+		return errors.New("set->key must be non-negative")
+	}
+
+	return nil
+}
+
+/*
+formatCommand builds a command string efficiently using strings.Builder
+*/
+func formatCommand(command, bucket string, key int, value string) string {
+	var sbuild strings.Builder
+
+	_, _ = sbuild.WriteString(command)
+	_, _ = sbuild.WriteString("\n")
+	_, _ = sbuild.WriteString(bucket)
+	_, _ = sbuild.WriteString("_")
+	_, _ = sbuild.WriteString(strconv.Itoa(key))
+	_, _ = sbuild.WriteString("\n")
+
+	if value != "" {
+		_, _ = sbuild.WriteString(value)
+		_, _ = sbuild.WriteString("\n")
+	}
+
+	return sbuild.String()
 }
 
 /*
@@ -227,7 +265,7 @@ func (fdb *DB) Close() error {
 		}
 	}
 
-	fdb.keys = map[string]map[int][]byte{}
+	fdb.keys = make(map[string]map[int][]byte)
 
 	return nil
 }

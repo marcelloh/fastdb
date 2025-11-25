@@ -20,6 +20,10 @@ import (
 
 /* ---------------------- Constants/Types/Variables ------------------ */
 
+const maxRecords = 100000
+
+const showMax = 15
+
 type user struct {
 	ID    int
 	UUID  string
@@ -37,7 +41,7 @@ type record struct {
 main is the bootstrap of the application.
 */
 func main() {
-	store, err := fastdb.Open(":memory:", 100)
+	store, err := fastdb.Open(":memory:", 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,13 +53,15 @@ func main() {
 		}
 	}()
 
-	total := 100000 // nr of records to work with
+	total := maxRecords // nr of records to work with
 
 	start := time.Now()
+
 	fillData(store, total)
 	log.Printf("created %d records in %s", total, time.Since(start))
 
 	start = time.Now()
+
 	dbRecords, err := store.GetAll("user")
 	if err != nil {
 		log.Panic(err)
@@ -75,24 +81,34 @@ func sortByUUID(dbRecords map[int][]byte) {
 	keys := make([]record, len(dbRecords))
 
 	for key := range dbRecords {
-		json := string(dbRecords[key])
-		value := gjson.Get(json, "UUID").Str + strconv.Itoa(key)
+		jsonKey := string(dbRecords[key])
+		value := gjson.Get(jsonKey, "UUID").Str + strconv.Itoa(key)
+
 		keys[count] = record{SortField: value, Data: dbRecords[key]}
 		count++
 	}
 
 	sort.Slice(keys, func(i, j int) bool {
-		return keys[i].SortField.(string) < keys[j].SortField.(string)
+		iVal, iOk := keys[i].SortField.(string)
+
+		jVal, jOk := keys[j].SortField.(string)
+
+		if !iOk || !jOk {
+			// Handle the error case - perhaps provide a default comparison or panic with a message
+			panic("SortField is not a string")
+		}
+
+		return iVal < jVal
 	})
 
 	log.Printf("sort %d records by UUID in %s", count, time.Since(start))
 
-	for key, value := range keys {
-		if key >= 15 {
+	for key := range keys {
+		if key >= showMax {
 			break
 		}
 
-		fmt.Printf("value : %v\n", string(value.Data))
+		fmt.Printf("value : %v\n", string(keys[key].Data))
 	}
 }
 
@@ -105,7 +121,7 @@ func fillData(store *fastdb.DB, total int) {
 
 	for i := 1; i <= total; i++ {
 		user.ID = i
-		user.UUID = "UUIDtext_" + generateRandomString(8) + strconv.Itoa(user.ID)
+		user.UUID = "UUIDtext_" + generateRandomString(10) + strconv.Itoa(user.ID)
 
 		userData, err := json.Marshal(user)
 		if err != nil {
@@ -123,16 +139,16 @@ func fillData(store *fastdb.DB, total int) {
 func generateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	b := make([]byte, length)
+	bytes := make([]byte, length)
 
-	_, err := rand.Read(b)
+	_, err := rand.Read(bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for i := range b {
-		b[i] = charset[int(b[i])%len(charset)]
+	for i := range bytes {
+		bytes[i] = charset[int(bytes[i])%len(charset)]
 	}
 
-	return string(b)
+	return string(bytes)
 }

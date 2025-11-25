@@ -1,0 +1,13 @@
+version: '3'
+
+silent: true
+
+vars:
+  PROJECTNAME: FastDB
+  EXECUTABLE: 
+  MIGRATE: N
+
+includes:
+  lib:
+    taskfile: ./../../Taskfile.yml
+    flatten: true
