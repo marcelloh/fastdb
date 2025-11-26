@@ -1574,3 +1574,53 @@ func Test_ConcurrentSetDel_CoupleOfSecondsPart3(t *testing.T) {
 		assert.NoError(t, err, "Should be able to unmarshal record %d", id)
 	}
 }
+
+func Test_Reproduction_NewlineInValue(t *testing.T) {
+	path := "data/repro_newline.db"
+
+	path = strings.ReplaceAll(path, "/", string(os.PathSeparator))
+
+	filePath := filepath.Clean(path)
+
+	_ = os.Remove(filePath)
+
+	defer func() {
+		_ = os.Remove(filePath)
+	}()
+
+	// 1. Open DB and write a value with newline
+	store, err := fastdb.Open(path, 100)
+	require.NoError(t, err)
+
+	key := 1
+	value := []byte("line1\nline2")
+	bucket := "test_bucket"
+
+	err = store.Set(bucket, key, value)
+	require.NoError(t, err)
+
+	// Verify in memory before closing
+	val, ok := store.Get(bucket, key)
+	require.True(t, ok)
+	assert.Equal(t, value, val)
+
+	err = store.Close()
+	require.NoError(t, err)
+
+	// 2. Reopen DB and try to read it back
+	store2, err := fastdb.Open(path, 100)
+	// This is expected to fail or return corrupted data if the bug exists
+	if err != nil {
+		t.Logf("Failed to open DB: %v", err)
+	} else {
+		val2, ok := store2.Get(bucket, key)
+		if !ok {
+			t.Log("Key not found after reopen")
+		} else {
+			assert.Equal(t, value, val2, "Value should match after reopen")
+		}
+
+		err = store2.Close()
+		require.NoError(t, err)
+	}
+}

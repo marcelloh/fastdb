@@ -415,6 +415,8 @@ func (aof *AOF) setBucketAndKey(key, value string, keys map[string]map[int][]byt
 		keys[bucket] = make(map[int][]byte)
 	}
 
+	// unescape newlines
+	value = strings.ReplaceAll(value, "\\n", "\n")
 	keys[bucket][keyID] = []byte(value)
 
 	return nil

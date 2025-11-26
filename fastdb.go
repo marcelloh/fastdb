@@ -245,6 +245,8 @@ func formatCommand(command, bucket string, key int, value string) string {
 	_, _ = sbuild.WriteString("\n")
 
 	if value != "" {
+		// escape newlines
+		value = strings.ReplaceAll(value, "\n", "\\n")
 		_, _ = sbuild.WriteString(value)
 		_, _ = sbuild.WriteString("\n")
 	}
