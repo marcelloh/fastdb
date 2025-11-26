@@ -135,3 +135,6 @@ Benchmark_Get_File_1000-8           	44613194	        26.18 ns/op	       0 B/op	
 In the examples directory, you will find an example on how to sort the data.  
 
 If more examples are needed, I will write them.
+
+
+[![blazingly fast](https://blazingly.fast/api/badge.svg?repo=marcelloh%2Ffastdb)](https://blazingly.fast)
