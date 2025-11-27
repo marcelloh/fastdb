@@ -27,8 +27,11 @@ const (
 // AOF is Append Only File.
 type AOF struct {
 	file     *os.File
+	isOpen   bool
 	syncTime int
 	mu       sync.RWMutex
+	stopChan chan struct{}
+	wg       sync.WaitGroup
 }
 
 // Lock     = &sync.Mutex{}
@@ -40,7 +43,11 @@ var osCreate = os.O_CREATE
 OpenPersister opens the append only file and reads in all the data.
 */
 func OpenPersister(path string, syncTime int) (*AOF, map[string]map[int][]byte, error) {
-	aof := &AOF{syncTime: syncTime}
+	aof := &AOF{
+		isOpen:   true,
+		syncTime: syncTime,
+		stopChan: make(chan struct{}),
+	}
 
 	filePath := filepath.Clean(path)
 	if filePath != path {
@@ -65,6 +72,8 @@ func OpenPersister(path string, syncTime int) (*AOF, map[string]map[int][]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
+
+	aof.wg.Add(1)
 
 	go aof.flush()
 
@@ -122,6 +131,13 @@ func (aof *AOF) Defrag(keys map[string]map[int][]byte) (err error) {
 Close stops the flush routine, flushes the last data to disk and closes the file.
 */
 func (aof *AOF) Close() error {
+	if aof.isOpen {
+		// Signal flush to stop
+		close(aof.stopChan)
+		// Wait for flush to finish
+		aof.wg.Wait()
+	}
+
 	defer aof.lockUnlock()()
 
 	err := aof.file.Sync()
@@ -134,9 +150,7 @@ func (aof *AOF) Close() error {
 		return fmt.Errorf("close error: %s %w", aof.file.Name(), err)
 	}
 
-	// to be sure that the flushing is stopped
-	flushPause := time.Millisecond * time.Duration(aof.syncTime)
-	time.Sleep(flushPause)
+	aof.isOpen = false
 
 	return nil
 }
@@ -448,6 +462,8 @@ Flush starts a goroutine to sync the database.
 The routine will stop if the file is closed
 */
 func (aof *AOF) flush() {
+	defer aof.wg.Done()
+
 	if aof.syncTime == 0 {
 		return
 	}
@@ -459,10 +475,19 @@ func (aof *AOF) flush() {
 		tick.Stop()
 	}()
 
-	for range tick.C {
-		err := aof.file.Sync()
-		if err != nil {
-			break
+	for {
+		select {
+		case <-aof.stopChan:
+			return
+		case <-tick.C:
+			aof.mu.Lock()
+
+			err := aof.file.Sync()
+			aof.mu.Unlock()
+
+			if err != nil {
+				return
+			}
 		}
 	}
 }
@@ -520,6 +545,9 @@ func (aof *AOF) writeFile(keys map[string]map[int][]byte) error {
 	}
 
 	// write keys to file
+	aof.stopChan = make(chan struct{})
+	aof.wg.Add(1)
+
 	go aof.flush()
 
 	for bucket := range keys {
