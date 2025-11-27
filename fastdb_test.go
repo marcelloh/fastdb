@@ -32,6 +32,8 @@ type someRecord struct {
 }
 
 func Test_Open_File_noData(t *testing.T) {
+	t.Parallel()
+
 	path := "data/fastdb_open_no_data.db"
 
 	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
@@ -53,6 +55,8 @@ func Test_Open_File_noData(t *testing.T) {
 }
 
 func Test_Open_Memory(t *testing.T) {
+	t.Parallel()
+
 	path := memory
 
 	store, err := fastdb.Open(path, syncTime)
@@ -66,6 +70,8 @@ func Test_Open_Memory(t *testing.T) {
 }
 
 func Test_SetGetDel_oneRecord(t *testing.T) {
+	t.Parallel()
+
 	path := "data/fastdb_set.db"
 	filePath := filepath.Clean(path)
 
@@ -226,6 +232,8 @@ func Fuzz_SetGetDel_oneRecord(f *testing.F) {
 }
 
 func Test_Get_wrongRecord(t *testing.T) {
+	t.Parallel()
+
 	path := memory
 
 	store, err := fastdb.Open(path, syncTime)
@@ -258,6 +266,8 @@ func Test_Get_wrongRecord(t *testing.T) {
 }
 
 func Test_Defrag_1000lines(t *testing.T) {
+	t.Parallel()
+
 	path := "data/fastdb_defrag1000.db"
 
 	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
@@ -310,6 +320,8 @@ func Test_Defrag_1000lines(t *testing.T) {
 }
 
 func Test_Defrag_250000lines(t *testing.T) {
+	t.Parallel()
+
 	path := "data/fastdb_defrag1000000.db"
 	filePath := filepath.Clean(path)
 
@@ -358,6 +370,8 @@ func Test_Defrag_250000lines(t *testing.T) {
 }
 
 func Test_GetAllFromMemory_1000(t *testing.T) {
+	t.Parallel()
+
 	total := 1000
 	path := memory
 
@@ -398,24 +412,26 @@ func Test_GetAllFromMemory_1000(t *testing.T) {
 }
 
 func Test_GetAllFromFile_1000(t *testing.T) {
-	total := 1000
-	path := "data/fastdb_1000.db"
+	t.Parallel()
 
-	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
+	total := 1000
+	path := "data/fastdb_1000-1.db"
 
 	filePath := filepath.Clean(path)
 
 	_ = os.Remove(filePath)
 
-	store, err := fastdb.Open(path, syncTime)
+	defer func() {
+		err := os.Remove(filePath)
+		require.NoError(t, err)
+	}()
+
+	store, err := fastdb.Open(filePath, syncTime)
 	require.NoError(t, err)
 	assert.NotNil(t, store)
 
 	defer func() {
 		err = store.Close()
-		require.NoError(t, err)
-
-		err = os.Remove(filePath)
 		require.NoError(t, err)
 	}()
 
@@ -445,11 +461,10 @@ func Test_GetAllFromFile_1000(t *testing.T) {
 }
 
 func Test_GetAllSortedFromFile_10000(t *testing.T) {
+	t.Parallel()
+
 	total := 10000
-
-	path := "data/fastdb_1000.db"
-
-	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
+	path := "data/fastdb_1000-2.db"
 
 	filePath := filepath.Clean(path)
 
@@ -460,7 +475,7 @@ func Test_GetAllSortedFromFile_10000(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	store, err := fastdb.Open(path, syncTime)
+	store, err := fastdb.Open(filePath, syncTime)
 	require.NoError(t, err)
 	assert.NotNil(t, store)
 
@@ -505,6 +520,8 @@ func Test_GetAllSortedFromFile_10000(t *testing.T) {
 }
 
 func Test_GetAllSortedFromMemory_10000(t *testing.T) {
+	t.Parallel()
+
 	total := 10000
 	path := memory
 
@@ -557,6 +574,8 @@ func Test_GetAllSortedFromMemory_10000(t *testing.T) {
 }
 
 func Test_Set_error(t *testing.T) {
+	t.Parallel()
+
 	path := "data/fastdb_set_error.db"
 	filePath := filepath.Clean(path)
 
@@ -578,6 +597,8 @@ func Test_Set_error(t *testing.T) {
 }
 
 func Test_Set_wrongBucket(t *testing.T) {
+	t.Parallel()
+
 	path := "data/fastdb_set_bucket_error.db"
 
 	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
@@ -616,6 +637,8 @@ func Test_Set_wrongBucket(t *testing.T) {
 }
 
 func TestConcurrentOperations(t *testing.T) {
+	t.Parallel()
+
 	path := "testdb_concurrent_delete"
 	filePath := filepath.Clean(path)
 
@@ -966,6 +989,8 @@ func performConcurrentDelete(store *fastdb.DB, bucket string, id int,
 // records from the database, and then verifies that the tracked record count
 // matches the actual record count in the database.
 func Test_ConcurrentSetDel_CoupleOfSeconds(t *testing.T) {
+	t.Parallel()
+
 	locSmallRecBucket := "concurrent_small_test"
 	locRecBucket := "concurrent_test"
 
@@ -980,21 +1005,21 @@ func Test_ConcurrentSetDel_CoupleOfSeconds(t *testing.T) {
 	_ = os.Remove(filePath)
 
 	// Open the database
-	store, err := fastdb.Open(filePath, syncTime)
-	require.NoError(t, err)
+	store, errOpen := fastdb.Open(filePath, syncTime)
+	require.NoError(t, errOpen)
 	assert.NotNil(t, store)
 
 	// Ensure database is closed after test
 	defer func() {
-		err = store.Close()
-		require.NoError(t, err)
+		errClose := store.Close()
+		require.NoError(t, errClose)
 
 		// Give the OS a moment to release the file handle
 		time.Sleep(250 * time.Millisecond)
 
-		err = os.Remove(filePath)
-		if err != nil {
-			t.Logf("Warning: Failed to remove test file: %v", err)
+		errRemove := os.Remove(filePath)
+		if errRemove != nil {
+			t.Logf("Warning: Failed to remove test file: %v", errRemove)
 		}
 	}()
 
@@ -1036,6 +1061,8 @@ func Test_ConcurrentSetDel_CoupleOfSeconds(t *testing.T) {
 
 		go func(writerID int) {
 			defer wg.Done()
+
+			var err error
 
 			// Create a separate random source for each goroutine
 			localRand := rand.New(rand.NewSource(time.Now().UnixNano() + int64(writerID)))
@@ -1178,33 +1205,34 @@ func Test_ConcurrentSetDel_CoupleOfSeconds(t *testing.T) {
 }
 
 func Test_ConcurrentSetDel_CoupleOfSecondsPart2(t *testing.T) {
+	t.Parallel()
+
 	locSmallRecBucket := "concurrent_small_test"
 	locRecBucket := "concurrent_test"
 
-	// Use a unique file path to avoid conflicts with other tests
-	// path := "data/fastdb_concurrent_5secP2.db"
-	path := "data/fastdb_concurrent_15secs.db"
+	// Deliberately use the same file as the other test
+	path := "data/fastdb_concurrent_5sec.db"
 
 	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
 
 	filePath := filepath.Clean(path)
 
 	// Open the database
-	store, err := fastdb.Open(filePath, syncTime)
-	require.NoError(t, err)
+	store, errOpen := fastdb.Open(filePath, syncTime)
+	require.NoError(t, errOpen)
 	assert.NotNil(t, store)
 
 	// Ensure database is closed after test
 	defer func() {
-		err = store.Close()
-		require.NoError(t, err)
+		errClose := store.Close()
+		require.NoError(t, errClose)
 
 		// Give the OS a moment to release the file handle
 		time.Sleep(250 * time.Millisecond)
 
-		err = os.Remove(filePath)
-		if err != nil {
-			t.Logf("Warning: Failed to remove test file: %v", err)
+		errRemove := os.Remove(filePath)
+		if errRemove != nil {
+			t.Logf("Warning: Failed to remove test file: %v", errRemove)
 		}
 	}()
 
@@ -1246,6 +1274,8 @@ func Test_ConcurrentSetDel_CoupleOfSecondsPart2(t *testing.T) {
 
 		go func(writerID int) {
 			defer wg.Done()
+
+			var err error
 
 			// Create a separate random source for each goroutine
 			localRand := rand.New(rand.NewSource(time.Now().UnixNano() + int64(writerID)))
@@ -1377,11 +1407,12 @@ func Test_ConcurrentSetDel_CoupleOfSecondsPart2(t *testing.T) {
 }
 
 func Test_ConcurrentSetDel_CoupleOfSecondsPart3(t *testing.T) {
+	t.Parallel()
+
 	locSmallRecBucket := "concurrent_small_test"
 	locRecBucket := "concurrent_test"
 
-	// Use a unique file path to avoid conflicts with other tests
-	// path := "data/fastdb_concurrent_5secP2.db"
+	// Deliberately use the same file as the other test
 	path := "data/fastdb_concurrent_15secs.db"
 
 	path = strings.ReplaceAll(path, "/", string(os.PathSeparator)) // windows fix
@@ -1389,21 +1420,21 @@ func Test_ConcurrentSetDel_CoupleOfSecondsPart3(t *testing.T) {
 	filePath := filepath.Clean(path)
 
 	// Open the database
-	store, err := fastdb.Open(filePath, syncTime)
-	require.NoError(t, err)
+	store, errOpen := fastdb.Open(filePath, syncTime)
+	require.NoError(t, errOpen)
 	assert.NotNil(t, store)
 
 	// Ensure database is closed after test
 	defer func() {
-		err = store.Close()
-		require.NoError(t, err)
+		errClose := store.Close()
+		require.NoError(t, errClose)
 
 		// Give the OS a moment to release the file handle
 		time.Sleep(250 * time.Millisecond)
 
-		err = os.Remove(filePath)
-		if err != nil {
-			t.Logf("Warning: Failed to remove test file: %v", err)
+		errRemove := os.Remove(filePath)
+		if errRemove != nil {
+			t.Logf("Warning: Failed to remove test file: %v", errRemove)
 		}
 	}()
 
@@ -1445,6 +1476,8 @@ func Test_ConcurrentSetDel_CoupleOfSecondsPart3(t *testing.T) {
 
 		go func(writerID int) {
 			defer wg.Done()
+
+			var err error
 
 			// Create a separate random source for each goroutine
 			localRand := rand.New(rand.NewSource(time.Now().UnixNano() + int64(writerID)))
@@ -1576,6 +1609,8 @@ func Test_ConcurrentSetDel_CoupleOfSecondsPart3(t *testing.T) {
 }
 
 func Test_Reproduction_NewlineInValue(t *testing.T) {
+	t.Parallel()
+
 	path := "data/repro_newline.db"
 
 	path = strings.ReplaceAll(path, "/", string(os.PathSeparator))

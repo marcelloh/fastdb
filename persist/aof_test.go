@@ -19,6 +19,7 @@ const (
 )
 
 func Test_OpenPersister_noData(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_nodata_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -42,6 +43,7 @@ func Test_OpenPersister_noData(t *testing.T) {
 }
 
 func Test_OpenPersister_invalidPath(t *testing.T) {
+	t.Parallel()
 	// Use a path with invalid characters that will cause an error
 	path := "//\\\\:*?\"<>|/invalid.db"
 	aof, keys, err := persist.OpenPersister(path, syncTime)
@@ -51,6 +53,7 @@ func Test_OpenPersister_invalidPath(t *testing.T) {
 }
 
 func Test_OpenPersister_nonExistingPath(t *testing.T) {
+	t.Parallel()
 	// Since OpenPersister now creates directories, we need to test a truly invalid path
 	// Use a path with invalid characters that will cause an error
 	path := "//\\\\:*?\"<>|/invalid.db"
@@ -61,6 +64,7 @@ func Test_OpenPersister_nonExistingPath(t *testing.T) {
 }
 
 func Test_OpenPersister_withData(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -115,6 +119,7 @@ func Test_OpenPersister_withData(t *testing.T) {
 }
 
 func Test_OpenPersister_withWeirdData(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_weird_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -157,6 +162,7 @@ func Test_OpenPersister_withWeirdData(t *testing.T) {
 }
 
 func Test_OpenPersister_IncompleteSetInstructionNoKey(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_incomplete_set_no_key.db"
 
 	// Clean up any existing file before starting the test
@@ -186,6 +192,7 @@ func Test_OpenPersister_IncompleteSetInstructionNoKey(t *testing.T) {
 }
 
 func Test_OpenPersister_IncompleteSetInstructionWithKey(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_incomplete_set_with_key.db"
 
 	// Clean up any existing file before starting the test
@@ -217,6 +224,7 @@ func Test_OpenPersister_IncompleteSetInstructionWithKey(t *testing.T) {
 }
 
 func Test_OpenPersister_IncompleteDelInstructionNoKey(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_incomplete_del_no_key.db"
 
 	// Clean up any existing file before starting the test
@@ -246,6 +254,7 @@ func Test_OpenPersister_IncompleteDelInstructionNoKey(t *testing.T) {
 }
 
 func Test_OpenPersister_IncompleteDelInstructionWithKey(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_incomplete_del_with_key.db"
 
 	// Clean up any existing file before starting the test
@@ -284,6 +293,7 @@ func Test_OpenPersister_IncompleteDelInstructionWithKey(t *testing.T) {
 }
 
 func Test_OpenPersister_writeError(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_write_error_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -311,6 +321,7 @@ func Test_OpenPersister_writeError(t *testing.T) {
 }
 
 func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_wrong_key1_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -349,6 +360,7 @@ func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
 }
 
 func Test_OpenPersister_withNoNumericKey(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_wrong_key_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -387,6 +399,7 @@ func Test_OpenPersister_withNoNumericKey(t *testing.T) {
 }
 
 func Test_OpenPersister_withWrongInstruction(t *testing.T) {
+	t.Parallel()
 	path := "../data/fast_persister_wrong_instruction_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -425,6 +438,7 @@ func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 }
 
 func Test_OpenPersister_concurrentWrites(t *testing.T) {
+	t.Parallel()
 	path := "../data/concurrent_write.db"
 
 	// Clean up any existing file before starting the test
@@ -435,9 +449,9 @@ func Test_OpenPersister_concurrentWrites(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	aof, _, err := persist.OpenPersister(filePath, syncTime)
+	aof, _, errOpen := persist.OpenPersister(filePath, syncTime)
 
-	require.NoError(t, err)
+	require.NoError(t, errOpen)
 	assert.NotNil(t, aof)
 
 	var wg sync.WaitGroup
@@ -449,15 +463,15 @@ func Test_OpenPersister_concurrentWrites(t *testing.T) {
 
 			lines := fmt.Sprintf("set\nkey_%d\nvalue for key %d\n", i, i)
 
-			err = aof.Write(lines)
+			err := aof.Write(lines)
 			assert.NoError(t, err)
 		}(i)
 	}
 
 	wg.Wait()
 
-	err = aof.Close()
-	require.NoError(t, err)
+	errClose := aof.Close()
+	require.NoError(t, errClose)
 
 	// Check if all keys were written correctly
 	aof, keys, err := persist.OpenPersister(filePath, 0)
@@ -468,11 +482,12 @@ func Test_OpenPersister_concurrentWrites(t *testing.T) {
 	assert.NotNil(t, bucketKeys)
 	assert.Len(t, bucketKeys, 10)
 
-	err = aof.Close()
-	require.NoError(t, err)
+	errClose = aof.Close()
+	require.NoError(t, errClose)
 }
 
 func Test_OpenPersister_writeAfterClose(t *testing.T) {
+	t.Parallel()
 	path := "../data/write_after_close_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -499,6 +514,7 @@ func Test_OpenPersister_writeAfterClose(t *testing.T) {
 }
 
 func Test_OpenPersister_invalidInstructionFormat(t *testing.T) {
+	t.Parallel()
 	path := "../data/invalid_instruction_format_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -522,6 +538,7 @@ func Test_OpenPersister_invalidInstructionFormat(t *testing.T) {
 }
 
 func Test_Defrag(t *testing.T) {
+	t.Parallel()
 	path := "../data/fastdb_defrag100_unique.db"
 
 	filePath := filepath.Clean(path)
@@ -566,6 +583,7 @@ func Test_Defrag(t *testing.T) {
 }
 
 func Test_Defrag_AlreadyClosed(t *testing.T) {
+	t.Parallel()
 	path := "../data/fastdb_defrag100.db"
 
 	filePath := filepath.Clean(path)
