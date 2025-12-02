@@ -552,8 +552,13 @@ func (aof *AOF) writeFile(keys map[string]map[int][]byte) error {
 
 	for bucket := range keys {
 		startLine := "set\n" + bucket + "_"
+
 		for key := range keys[bucket] {
-			lines := startLine + strconv.Itoa(key) + "\n" + string(keys[bucket][key]) + "\n"
+			value := string(keys[bucket][key])
+
+			value = strings.ReplaceAll(value, "\n", "\\n")
+
+			lines := startLine + strconv.Itoa(key) + "\n" + value + "\n"
 
 			err = aof.Write(lines)
 			if err != nil {
