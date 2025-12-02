@@ -20,6 +20,7 @@ const (
 
 func Test_OpenPersister_noData(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_nodata_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -65,6 +66,7 @@ func Test_OpenPersister_nonExistingPath(t *testing.T) {
 
 func Test_OpenPersister_withData(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -120,6 +122,7 @@ func Test_OpenPersister_withData(t *testing.T) {
 
 func Test_OpenPersister_withWeirdData(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_weird_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -163,6 +166,7 @@ func Test_OpenPersister_withWeirdData(t *testing.T) {
 
 func Test_OpenPersister_IncompleteSetInstructionNoKey(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_incomplete_set_no_key.db"
 
 	// Clean up any existing file before starting the test
@@ -193,6 +197,7 @@ func Test_OpenPersister_IncompleteSetInstructionNoKey(t *testing.T) {
 
 func Test_OpenPersister_IncompleteSetInstructionWithKey(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_incomplete_set_with_key.db"
 
 	// Clean up any existing file before starting the test
@@ -225,6 +230,7 @@ func Test_OpenPersister_IncompleteSetInstructionWithKey(t *testing.T) {
 
 func Test_OpenPersister_IncompleteDelInstructionNoKey(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_incomplete_del_no_key.db"
 
 	// Clean up any existing file before starting the test
@@ -255,6 +261,7 @@ func Test_OpenPersister_IncompleteDelInstructionNoKey(t *testing.T) {
 
 func Test_OpenPersister_IncompleteDelInstructionWithKey(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_incomplete_del_with_key.db"
 
 	// Clean up any existing file before starting the test
@@ -294,6 +301,7 @@ func Test_OpenPersister_IncompleteDelInstructionWithKey(t *testing.T) {
 
 func Test_OpenPersister_writeError(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_write_error_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -322,6 +330,7 @@ func Test_OpenPersister_writeError(t *testing.T) {
 
 func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_wrong_key1_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -361,6 +370,7 @@ func Test_OpenPersister_withNoUnderscoredKey(t *testing.T) {
 
 func Test_OpenPersister_withNoNumericKey(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_wrong_key_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -400,6 +410,7 @@ func Test_OpenPersister_withNoNumericKey(t *testing.T) {
 
 func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fast_persister_wrong_instruction_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -439,6 +450,7 @@ func Test_OpenPersister_withWrongInstruction(t *testing.T) {
 
 func Test_OpenPersister_concurrentWrites(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/concurrent_write.db"
 
 	// Clean up any existing file before starting the test
@@ -488,6 +500,7 @@ func Test_OpenPersister_concurrentWrites(t *testing.T) {
 
 func Test_OpenPersister_writeAfterClose(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/write_after_close_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -515,6 +528,7 @@ func Test_OpenPersister_writeAfterClose(t *testing.T) {
 
 func Test_OpenPersister_invalidInstructionFormat(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/invalid_instruction_format_unique.db"
 
 	// Clean up any existing file before starting the test
@@ -539,6 +553,7 @@ func Test_OpenPersister_invalidInstructionFormat(t *testing.T) {
 
 func Test_Defrag(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fastdb_defrag100_unique.db"
 
 	filePath := filepath.Clean(path)
@@ -584,6 +599,7 @@ func Test_Defrag(t *testing.T) {
 
 func Test_Defrag_AlreadyClosed(t *testing.T) {
 	t.Parallel()
+
 	path := "../data/fastdb_defrag100.db"
 
 	filePath := filepath.Clean(path)

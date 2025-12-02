@@ -1659,3 +1659,94 @@ func Test_Reproduction_NewlineInValue(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
+
+func Test_Reproduction_UnderscoreInBucket(t *testing.T) {
+	t.Parallel()
+
+	path := "data/repro_underscore.db"
+
+	path = strings.ReplaceAll(path, "/", string(os.PathSeparator))
+
+	filePath := filepath.Clean(path)
+
+	_ = os.Remove(filePath)
+
+	defer func() {
+		_ = os.Remove(filePath)
+	}()
+
+	// 1. Open DB and write a value with newline
+	store, err := fastdb.Open(path, 100)
+	require.NoError(t, err)
+
+	key := 1
+	value := []byte("line1\nline2")
+	bucket := "test_bucket"
+
+	err = store.Set(bucket, key, value)
+	require.NoError(t, err)
+
+	// Verify in memory before closing
+	val, ok := store.Get(bucket, key)
+	require.True(t, ok)
+	assert.Equal(t, value, val)
+
+	err = store.Close()
+	require.NoError(t, err)
+
+	// 2. Reopen DB and try to read it back
+	store2, err := fastdb.Open(path, 100)
+	// This is expected to fail or return corrupted data if the bug exists
+	if err != nil {
+		t.Logf("Failed to open DB: %v", err)
+	} else {
+		val2, ok := store2.Get(bucket, key)
+		if !ok {
+			t.Log("Key not found after reopen")
+		} else {
+			assert.Equal(t, value, val2, "Value should match after reopen")
+		}
+
+		err = store2.Close()
+		require.NoError(t, err)
+	}
+}
+
+func TestConcurrentWrites(t *testing.T) {
+	// Run 10 processes simultaneously
+	path := "data/repro_concurrent.db"
+
+	path = strings.ReplaceAll(path, "/", string(os.PathSeparator))
+
+	filePath := filepath.Clean(path)
+
+	_ = os.Remove(filePath)
+
+	defer func() {
+		_ = os.Remove(filePath)
+	}()
+
+	store, err := fastdb.Open(path, 100)
+	if err != nil {
+		t.Errorf("fastdb.Open: Failed to open DB: %v", err)
+		return
+	}
+
+	defer func() {
+		err = store.Close()
+		require.NoError(t, err)
+	}()
+
+	var wg sync.WaitGroup
+
+	for i := range 10 {
+		wg.Go(func() {
+			for j := range 100 {
+				err = store.Set("test", i*100+j, fmt.Appendf(nil, "value from proc %d", i))
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	wg.Wait()
+}
